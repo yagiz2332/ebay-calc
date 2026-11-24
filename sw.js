@@ -1,5 +1,5 @@
 /* eBay Fee Calculator - service worker: çevrimdışı çalışma */
-var V = "v1";
+var V = "v2";
 var SHELL = "shell-" + V, RUNTIME = "runtime-" + V;
 var FILES = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"];
 
@@ -33,7 +33,7 @@ self.addEventListener("fetch", function (e) {
   }
 
   /* Fontshare CSS ve yazı tipi dosyaları: önbellekten ver, arkada yenile */
-  if (url.hostname === "api.fontshare.com" || url.hostname === "cdn.fontshare.com") {
+  if (url.hostname === "api.fontshare.com" || url.hostname === "cdn.fontshare.com" || url.hostname === "www.gstatic.com") {
     e.respondWith(
       caches.open(RUNTIME).then(function (c) {
         return c.match(req).then(function (hit) {

@@ -128,6 +128,11 @@ button.ghost{background:var(--field);color:var(--tx)}
 .dr button{width:auto;padding:8px 14px;font-size:13px}
 .lx{background:none;color:var(--mu);width:auto;min-height:0;padding:0 2px 0 6px;font-size:11px;border-radius:4px;vertical-align:baseline}
 .lx:hover{color:var(--bad);opacity:1}
+.head{display:flex;align-items:center;justify-content:space-between;gap:10px 14px;flex-wrap:wrap;margin:6px 4px 20px}
+.head h1{margin:0}
+.sync{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--mu)}
+.sync button{width:auto;min-height:0;padding:7px 14px;font-size:12.5px;border-radius:999px}
+@media (min-width:1000px){.head{margin:0 4px 24px}}
 .empty{color:var(--mu);font-size:14px;padding:6px 0}
 html{-webkit-tap-highlight-color:transparent}
 button,input,select,summary{touch-action:manipulation}
@@ -161,7 +166,7 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
 </head>
 <body>
 <div class="w">
-<h1>eBay <span>Fee Calculator</span> <em>by DEDE</em></h1>
+<div class="head"><h1>eBay <span>Fee Calculator</span> <em>by DEDE</em></h1><div class="sync"><span id="syncMsg"></span><button id="syncBtn" class="ghost">Giriş yap</button></div></div>
 
 <div class="cols">
 <div class="col-a">
@@ -350,6 +355,7 @@ $("ap").addEventListener("click",function(){if(suggested!==null){$("sold").value
 
 /* ---- Ürün listesi ---- */
 var KEY="ebayList",items=[],pendingDel=null;
+var cloud={add:function(){},sale:function(){},rm:function(){},del:function(){},tax:function(){}};
 try{items=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){items=[]}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(items))}catch(e){}}
 function fields(){return [].slice.call(document.querySelectorAll("input:not([data-skip]),select:not([data-skip])")).filter(function(e){return e.id})}
@@ -406,7 +412,7 @@ $("add").addEventListener("click",function(){
  var s=n("sold");
  if(s<=0){var b0=$("add");b0.textContent="Önce satış fiyatı gir";setTimeout(function(){b0.textContent="Listeye ekle"},1600);return}
  items.unshift({id:nid(),name:$("pname").value.trim()||"İsimsiz ürün",added:Date.now(),snap:snap,listed:s,est:prof(s),sales:[]});
- save();$("pname").value="";renderList();
+ cloud.add(items[0]);save();$("pname").value="";renderList();
  var b=$("add");b.textContent="Eklendi ✓";setTimeout(function(){b.textContent="Listeye ekle"},1200);
 });
 $("pname").addEventListener("keydown",function(e){if(e.key==="Enter")$("add").click()});
@@ -415,19 +421,19 @@ $("list").addEventListener("click",function(e){
  var id=+b.dataset.id,it=items.filter(function(i){return i.id===id})[0];if(!it)return;
  if(b.dataset.act==="del"){pendingDel=id;renderList();return}
  if(b.dataset.act==="delno"){pendingDel=null;renderList();return}
- if(b.dataset.act==="delok"){pendingDel=null;items=items.filter(function(i){return i.id!==id})}
+ if(b.dataset.act==="delok"){pendingDel=null;items=items.filter(function(i){return i.id!==id});cloud.del(it)}
  else if(b.dataset.act==="sell"){
   var r=evalSnap(it.snap,it.listed);
-  it.sales.push({sid:nid(),n:1,price:it.listed,act:r.profit,rev:r.revenue,at:Date.now()});
+  var s1={sid:nid(),n:1,price:it.listed,act:r.profit,rev:r.revenue,at:Date.now()};it.sales.push(s1);cloud.sale(it,s1);
  }else if(b.dataset.act==="dopen"){openDate=id;renderList();return}
  else if(b.dataset.act==="dno"){openDate=null;renderList();return}
  else if(b.dataset.act==="dok"){
   var at=new Date($("sd"+id).value).getTime();
   if(isNaN(at)||at>Date.now()+6e4)return;
   var r2=evalSnap(it.snap,it.listed);
-  it.sales.push({sid:nid(),n:1,price:it.listed,act:r2.profit,rev:r2.revenue,at:at});openDate=null;
- }else if(b.dataset.act==="rm"){var sid=+b.dataset.sid;it.sales=it.sales.filter(function(x){return x.sid!==sid})}
- else if(b.dataset.act==="undo"){it.sales.pop()}
+  var s2={sid:nid(),n:1,price:it.listed,act:r2.profit,rev:r2.revenue,at:at};it.sales.push(s2);cloud.sale(it,s2);openDate=null;
+ }else if(b.dataset.act==="rm"){var sid=+b.dataset.sid;var gone=it.sales.filter(function(x){return x.sid===sid})[0];it.sales=it.sales.filter(function(x){return x.sid!==sid});if(gone)cloud.rm(it,gone)}
+ else if(b.dataset.act==="undo"){var pp=it.sales.pop();if(pp)cloud.rm(it,pp)}
  save();renderList();
 });
 $("lf").addEventListener("change",renderList);$("ls").addEventListener("change",renderList);
@@ -510,7 +516,7 @@ $("chSeg").addEventListener("click",function(e){
  chartMode=b.dataset.m;[].forEach.call(this.children,function(c){c.classList.toggle("on",c===b)});drawChart();
 });
 var rz=0;window.addEventListener("resize",function(){cancelAnimationFrame(rz);rz=requestAnimationFrame(drawChart)});
-$("tamt").addEventListener("input",function(){try{localStorage.setItem("ebayTax",this.value===""?"0":this.value)}catch(e){}});
+$("tamt").addEventListener("input",function(){var tv=this.value===""?"0":this.value;try{localStorage.setItem("ebayTax",tv)}catch(e){}cloud.tax(tv)});
 function resetEntry(){
  ["sold","shipC","promo","char","tm","pname"].forEach(function(i){$(i).value=""});
  var tx=null;try{tx=localStorage.getItem("ebayTax")}catch(e){}
@@ -520,6 +526,78 @@ function resetEntry(){
 if("serviceWorker" in navigator&&/^https?:$/.test(location.protocol)&&location.hostname!=="localhost"||("serviceWorker" in navigator&&location.hostname==="localhost"&&location.search.indexOf("sw")>-1)){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
 window.addEventListener("pageshow",function(e){if(e.persisted)resetEntry()});
 resetEntry();renderList();
+</script>
+<script type="module">
+(function(){
+var CFG={apiKey:"AIzaSyB5ns6FL24zSIDkxHHu52K28XIMAkt4MdM",authDomain:"ebay-calc-dede.firebaseapp.com",projectId:"ebay-calc-dede",storageBucket:"ebay-calc-dede.firebasestorage.app",messagingSenderId:"339612367783",appId:"1:339612367783:web:0e381b7cd0afe716215482"};
+var BASE="https://www.gstatic.com/firebasejs/10.14.1/";
+var btn=document.getElementById("syncBtn"),msg=document.getElementById("syncMsg");
+var uid=null,db=null,F=null,A=null,auth=null,ready=false,unsubI=null,unsubS=null;
+function say(t){msg.textContent=t||""}
+function getSynced(){try{return new Set(JSON.parse(localStorage.getItem("ebaySynced")||"[]"))}catch(e){return new Set()}}
+function putSynced(s){try{localStorage.setItem("ebaySynced",JSON.stringify(Array.from(s)))}catch(e){}}
+function clean(o){return JSON.parse(JSON.stringify(o))}
+function ref(i){return F.doc(db,"users",uid,"items",String(i.id))}
+function fail(e){console.warn("sync",e&&e.code||e);say(e&&e.code==="permission-denied"?"Bu hesabın erişim izni yok":"Senkron hatası")}
+function mark(id){var s=getSynced();s.add(id);putSynced(s)}
+function showBtn(u){if(u){btn.textContent="Çıkış";btn.title=u.displayName||u.email||""}else{btn.textContent="Giriş yap";say("Senkron kapalı")}}
+function start(){
+ ready=false;
+ var col=F.collection(db,"users",uid,"items");
+ unsubI=F.onSnapshot(col,{includeMetadataChanges:true},function(snap){
+  if(!ready&&snap.metadata.fromCache&&snap.empty)return;
+  var cloudItems=[];snap.forEach(function(d){cloudItems.push(d.data())});
+  var ids=new Set(cloudItems.map(function(i){return i.id}));
+  var s=getSynced(),merged=cloudItems.slice();
+  if(!ready){
+   (window.items||[]).forEach(function(i){
+    if(ids.has(i.id)||s.has(i.id))return;
+    F.setDoc(ref(i),clean(i)).catch(fail);merged.push(i);s.add(i.id);
+   });
+  }
+  cloudItems.forEach(function(i){s.add(i.id)});putSynced(s);
+  merged.sort(function(a,b){return b.added-a.added});
+  window.items=merged;window.save();window.renderList();
+  ready=true;
+  var m=snap.metadata;say(m.hasPendingWrites?"Eşitleniyor…":(m.fromCache?"Çevrimdışı":"Senkron açık"));
+ },fail);
+ unsubS=F.onSnapshot(F.doc(db,"users",uid,"meta","settings"),function(s){
+  var el=document.getElementById("tamt");
+  if(s.exists()&&s.data().tax!==undefined){
+   var v=String(s.data().tax);
+   if(el.value!==v&&document.activeElement!==el){el.value=v;try{localStorage.setItem("ebayTax",v)}catch(e){}window.calc()}
+  }else if(!s.metadata.fromCache){window.cloud.tax(el.value===""?"0":el.value)}
+ },fail);
+}
+function stop(){if(unsubI)unsubI();if(unsubS)unsubS();unsubI=unsubS=null;ready=false}
+btn.addEventListener("click",function(){
+ if(!A)return;
+ if(uid){A.signOut(auth);return}
+ var p=new A.GoogleAuthProvider();
+ A.signInWithPopup(auth,p).catch(function(e){
+  if(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment")A.signInWithRedirect(auth,p);
+  else if(e.code!=="auth/popup-closed-by-user"&&e.code!=="auth/cancelled-popup-request")say("Giriş başarısız")
+ });
+});
+(async function(){
+ try{
+  var m=await Promise.all([import(BASE+"firebase-app.js"),import(BASE+"firebase-auth.js"),import(BASE+"firebase-firestore.js")]);
+  var app=m[0].initializeApp(CFG);A=m[1];F=m[2];auth=A.getAuth(app);
+  try{db=F.initializeFirestore(app,{localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()})})}catch(e){db=F.getFirestore(app)}
+  var c=window.cloud;
+  c.add=function(i){if(!uid)return;F.setDoc(ref(i),clean(i)).catch(fail);mark(i.id)};
+  c.sale=function(i,x){if(!uid)return;F.updateDoc(ref(i),{sales:F.arrayUnion(clean(x))}).catch(function(e){if(e.code==="not-found")F.setDoc(ref(i),clean(i)).catch(fail);else fail(e)})};
+  c.rm=function(i,x){if(!uid)return;F.updateDoc(ref(i),{sales:F.arrayRemove(clean(x))}).catch(fail)};
+  c.del=function(i){if(!uid)return;F.deleteDoc(ref(i)).catch(fail)};
+  c.tax=function(v){if(!uid)return;F.setDoc(F.doc(db,"users",uid,"meta","settings"),{tax:v},{merge:true}).catch(fail)};
+  A.getRedirectResult(auth).catch(function(){});
+  A.onAuthStateChanged(auth,function(u){
+   if(u){uid=u.uid;showBtn(u);say("Bağlanıyor…");start()}
+   else{uid=null;stop();showBtn(null)}
+  });
+ }catch(e){console.warn("sync load",e);say("Senkron yüklenemedi");btn.disabled=true}
+})();
+})();
 </script>
 </body>
 </html>
