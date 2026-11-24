@@ -133,6 +133,12 @@ button.ghost{background:var(--field);color:var(--tx)}
 .sync{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--mu)}
 .sync button{width:auto;min-height:0;padding:7px 14px;font-size:12.5px;border-radius:999px}
 @media (min-width:1000px){.head{margin:0 4px 24px}}
+body.locked .w{display:none}
+.lock{display:none;position:fixed;inset:0;z-index:50;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:24px;background:var(--bg)}
+body.locked .lock{display:flex}
+.lock h1{margin:0}
+.lock p{margin:0;color:var(--mu);max-width:320px;line-height:1.5}
+.lock button{width:auto;padding:12px 24px}
 .empty{color:var(--mu);font-size:14px;padding:6px 0}
 html{-webkit-tap-highlight-color:transparent}
 button,input,select,summary{touch-action:manipulation}
@@ -164,7 +170,9 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
 @media (max-width:480px){.big{font-size:38px}body{padding-top:16px}}
 </style>
 </head>
-<body>
+<body class="locked">
+<div class="lock" id="lock"><h1>eBay <span>Fee Calculator</span> <em>by DEDE</em></h1><p id="lkT">Yükleniyor…</p><button id="lkB" hidden></button><button id="lkB2" class="ghost" hidden></button></div>
+<script>setTimeout(function(){var t=document.getElementById("lkT");if(document.body.classList.contains("locked")&&t&&t.textContent==="Yükleniyor…"){try{if(localStorage.getItem("ebayUnlocked")==="1"){document.body.classList.remove("locked");return}}catch(e){}t.textContent="Bağlanılamadı. İnternetini kontrol edip yeniden dene.";var b=document.getElementById("lkB");b.hidden=false;b.textContent="Yeniden dene";b.onclick=function(){location.reload()}}},12000)</script>
 <div class="w">
 <div class="head"><h1>eBay <span>Fee Calculator</span> <em>by DEDE</em></h1><div class="sync"><span id="syncMsg"></span><button id="syncBtn" class="ghost">Giriş yap</button></div></div>
 
@@ -665,6 +673,38 @@ function sheetCfg(url,token){
  shFlush();shSched();
 }
 window.addEventListener("online",function(){shFlush();shSched()});
+var lkT=document.getElementById("lkT"),lkB=document.getElementById("lkB"),lkB2=document.getElementById("lkB2"),lkMode="loading";
+function lkShow(mode){
+ lkMode=mode;document.body.classList.add("locked");
+ var t={loading:"Yükleniyor…",login:"Bu uygulama özeldir. Devam etmek için Google hesabınla giriş yap.",denied:"Bu hesabın erişim izni yok.",error:"Bağlanılamadı. İnternetini kontrol edip yeniden dene."};
+ lkT.textContent=t[mode];
+ lkB.hidden=mode==="loading";
+ lkB.textContent=mode==="login"?"Google ile giriş yap":(mode==="error"?"Yeniden dene":"Çıkış yap");
+ lkB2.hidden=mode!=="denied";lkB2.textContent="Başka hesapla gir";
+}
+function lkUnlock(){document.body.classList.remove("locked");window.dispatchEvent(new Event("resize"))}
+function signInNow(){
+ var p=new A.GoogleAuthProvider();
+ A.signInWithPopup(auth,p).catch(function(e){
+  if(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment")A.signInWithRedirect(auth,p);
+  else if(e.code!=="auth/popup-closed-by-user"&&e.code!=="auth/cancelled-popup-request")lkT.textContent="Giriş başarısız, tekrar dene."
+ });
+}
+lkB.addEventListener("click",function(){
+ if(lkMode==="login"&&A)signInNow();
+ else if(lkMode==="error")location.reload();
+ else if(lkMode==="denied"&&A)A.signOut(auth);
+});
+lkB2.addEventListener("click",function(){if(A)A.signOut(auth).then(function(){signInNow()})});
+async function gate(u){
+ lkShow("loading");
+ var r="ok";
+ try{await F.getDoc(F.doc(db,"users",u.uid,"meta","settings"))}catch(e){r=(e&&e.code==="permission-denied")?"denied":"error"}
+ if(r==="error"){try{if(localStorage.getItem("ebayUnlocked")==="1")r="ok"}catch(e){}}
+ if(r==="ok"){try{localStorage.setItem("ebayUnlocked","1")}catch(e){}uid=u.uid;showBtn(u);say("Bağlanıyor…");lkUnlock();start()}
+ else if(r==="denied"){try{localStorage.removeItem("ebayUnlocked")}catch(e){}lkShow("denied")}
+ else lkShow("error");
+}
 function stop(){if(unsubI)unsubI();if(unsubS)unsubS();unsubI=unsubS=null;ready=false}
 btn.addEventListener("click",function(){
  if(!A)return;
@@ -693,10 +733,10 @@ btn.addEventListener("click",function(){
   c.del=function(i){o0.del(i);shLog("Ürün silindi",i.name,"Satış sayısı: "+(i.sales||[]).length)};
   A.getRedirectResult(auth).catch(function(){});
   A.onAuthStateChanged(auth,function(u){
-   if(u){uid=u.uid;showBtn(u);say("Bağlanıyor…");start()}
-   else{uid=null;stop();showBtn(null)}
+   if(u){gate(u)}
+   else{uid=null;stop();showBtn(null);lkShow("login")}
   });
- }catch(e){console.warn("sync load",e);say("Senkron yüklenemedi");btn.disabled=true}
+ }catch(e){console.warn("sync load",e);say("Senkron yüklenemedi");btn.disabled=true;var okc=false;try{okc=localStorage.getItem("ebayUnlocked")==="1"}catch(x){}if(okc)lkUnlock();else lkShow("error")}
 })();
 })();
 </script>
