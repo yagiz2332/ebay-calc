@@ -618,12 +618,53 @@ function start(){
  },fail);
  unsubS=F.onSnapshot(F.doc(db,"users",uid,"meta","settings"),function(s){
   var el=document.getElementById("tamt");
+  if(s.exists()){var sd=s.data();if(sd.sheetUrl&&sd.sheetToken)sheetCfg(sd.sheetUrl,sd.sheetToken)}
   if(s.exists()&&s.data().tax!==undefined){
    var v=String(s.data().tax);
    if(el.value!==v&&document.activeElement!==el){el.value=v;try{localStorage.setItem("ebayTax",v)}catch(e){}window.calc()}
   }else if(!s.metadata.fromCache){window.cloud.tax(el.value===""?"0":el.value)}
  },fail);
 }
+var SH={url:"",token:"",timer:null,flushing:false};
+try{var shc=JSON.parse(localStorage.getItem("ebaySheet")||"null");if(shc&&shc.url&&shc.token){SH.url=shc.url;SH.token=shc.token}}catch(e){}
+function shPost(o){
+ if(!SH.url||!SH.token)return Promise.resolve(false);
+ o.token=SH.token;
+ return fetch(SH.url,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(o),keepalive:true}).then(function(){return true},function(){return false});
+}
+function shQ(){try{return JSON.parse(localStorage.getItem("ebayShLog")||"[]")}catch(e){return[]}}
+function shPut(q){try{localStorage.setItem("ebayShLog",JSON.stringify(q))}catch(e){}}
+function shLog(kind,name,detail){
+ if(!SH.url)return;
+ var q=shQ();q.push([window.xserial(Date.now()),kind,name,detail]);shPut(q);
+ shFlush();shSched();
+}
+function shFlush(){
+ if(SH.flushing||!SH.url)return;
+ var q=shQ();if(!q.length)return;
+ SH.flushing=true;
+ shPost({type:"log",rows:q}).then(function(ok){
+  SH.flushing=false;
+  if(ok){var cur=shQ();shPut(cur.slice(q.length));if(cur.length>q.length)shFlush()}
+ });
+}
+function shSched(){if(!SH.url)return;clearTimeout(SH.timer);SH.timer=setTimeout(shSnap,2500)}
+function shSnap(){
+ var it=window.items||[],sales=[],rows=[];
+ it.forEach(function(i){
+  (i.sales||[]).forEach(function(x){sales.push([window.xserial(x.at),i.name,x.n,x.price,x.rev*x.n,x.act*x.n])});
+  rows.push([i.name,i.listed,window.su(i),window.sRev(i),window.sPro(i),window.xserial(i.added)]);
+ });
+ sales.sort(function(a,b){return b[0]-a[0]});
+ shPost({type:"snapshot",sales:sales,items:rows});
+}
+function sheetCfg(url,token){
+ if(SH.url===url&&SH.token===token)return;
+ SH.url=url;SH.token=token;
+ try{localStorage.setItem("ebaySheet",JSON.stringify({url:url,token:token}))}catch(e){}
+ shFlush();shSched();
+}
+window.addEventListener("online",function(){shFlush();shSched()});
 function stop(){if(unsubI)unsubI();if(unsubS)unsubS();unsubI=unsubS=null;ready=false}
 btn.addEventListener("click",function(){
  if(!A)return;
@@ -645,6 +686,11 @@ btn.addEventListener("click",function(){
   c.rm=function(i,x){if(!uid)return;F.updateDoc(ref(i),{sales:F.arrayRemove(clean(x))}).catch(fail)};
   c.del=function(i){if(!uid)return;F.deleteDoc(ref(i)).catch(fail)};
   c.tax=function(v){if(!uid)return;F.setDoc(F.doc(db,"users",uid,"meta","settings"),{tax:v},{merge:true}).catch(fail)};
+  var o0={add:c.add,sale:c.sale,rm:c.rm,del:c.del};
+  c.add=function(i){o0.add(i);shLog("Ürün eklendi",i.name,"Liste fiyatı $"+Number(i.listed).toFixed(2))};
+  c.sale=function(i,x){o0.sale(i,x);shLog("Satış eklendi",i.name,x.n+" adet · $"+Number(x.price).toFixed(2)+" · kâr $"+(x.act*x.n).toFixed(2)+" · satış zamanı "+window.dts(x.at))};
+  c.rm=function(i,x){o0.rm(i,x);shLog("Satış silindi",i.name,x.n+" adet · $"+Number(x.price).toFixed(2)+" · satış zamanı "+window.dts(x.at))};
+  c.del=function(i){o0.del(i);shLog("Ürün silindi",i.name,"Satış sayısı: "+(i.sales||[]).length)};
   A.getRedirectResult(auth).catch(function(){});
   A.onAuthStateChanged(auth,function(u){
    if(u){uid=u.uid;showBtn(u);say("Bağlanıyor…");start()}
