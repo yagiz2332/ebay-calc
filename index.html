@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0c0e" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fee Calc">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>eBay Fee Calculator by DEDE</title>
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap">
+<style>
+:root{
+ --bg:#f5f5f7;--card:#ffffff;--field:#f2f2f5;--tx:#111114;--mu:#8a8a93;--bd:rgba(0,0,0,.07);
+ --ac:#111114;--acx:#fff;--ok:#12a150;--bad:#e5384b;--s1:#2a78d6;--shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04);
+ --r:18px;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0c0c0e;--card:#16161a;--field:#212126;--tx:#f2f2f4;--mu:#8b8b95;--bd:rgba(255,255,255,.07);--ac:#f2f2f4;--acx:#111114;--ok:#3ddc84;--bad:#ff6b7a;--s1:#3987e5;--shadow:none}}
+:root[data-theme="dark"]{--bg:#0c0c0e;--card:#16161a;--field:#212126;--tx:#f2f2f4;--mu:#8b8b95;--bd:rgba(255,255,255,.07);--ac:#f2f2f4;--acx:#111114;--ok:#3ddc84;--bad:#ff6b7a;--s1:#3987e5;--shadow:none}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 "Satoshi",-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Segoe UI",Roboto,sans-serif;padding:28px 16px 48px;-webkit-font-smoothing:antialiased}
+.w{max-width:680px;margin:0 auto}
+h1{font-size:26px;font-weight:700;letter-spacing:-.02em;margin:6px 4px 20px}
+h1 span{color:var(--mu);font-weight:500}
+h1 em{font-style:italic;font-weight:500;font-size:14px;color:var(--mu);letter-spacing:0;white-space:nowrap;opacity:.8}
+.card{background:var(--card);border-radius:var(--r);padding:20px;margin-bottom:14px;box-shadow:var(--shadow);border:1px solid var(--bd)}
+h2{font-size:12px;font-weight:600;margin:0 0 14px;color:var(--mu);text-transform:uppercase;letter-spacing:.08em}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+label{display:block;font-size:12px;font-weight:500;color:var(--mu);margin-bottom:6px}
+input,select{width:100%;padding:11px 12px;font:inherit;font-size:15px;color:var(--tx);background:var(--field);border:1.5px solid transparent;border-radius:12px;transition:border-color .15s,background .15s;-webkit-appearance:none;appearance:none}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%238a8a93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;appearance:none;margin:0;display:none}
+input::placeholder{color:var(--mu);opacity:.6}
+input:focus,select:focus{outline:none;border-color:var(--tx);background:var(--card)}
+.hint{font-size:12px;color:var(--mu);margin-top:5px}
+.res{padding:26px 22px}
+.top{display:flex;flex-wrap:wrap;gap:18px 28px;align-items:flex-end;justify-content:space-between}
+.top>div{min-width:120px}
+.res .main{flex:1 1 100%}
+.res .hint{margin:0 0 4px;font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.08em}
+.big{font-size:44px;font-weight:700;letter-spacing:-.03em;line-height:1.05;font-variant-numeric:tabular-nums}
+.sm{font-size:24px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.pos{color:var(--ok)}.neg{color:var(--bad)}.mid{color:var(--s1)}
+.note{font-size:12px;color:var(--mu);margin-top:3px;max-width:200px;line-height:1.35}
+.sub{display:flex;gap:32px;margin-top:6px;padding-top:18px;border-top:1px solid var(--bd);flex:1 1 100%}
+.r{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--bd);font-size:14px}
+.r span{color:var(--mu)}
+.r b{font-weight:600;font-variant-numeric:tabular-nums}
+.r:last-child{border:0;padding-bottom:0}
+.r:first-child{padding-top:0}
+.tg{align-items:end}
+.sp{font-size:30px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+button{padding:12px 18px;font:inherit;font-weight:600;font-size:14px;border:0;border-radius:12px;background:var(--ac);color:var(--acx);cursor:pointer;width:100%;transition:opacity .15s,transform .1s}
+button:hover{opacity:.88}button:active{transform:scale(.98)}
+details.card{padding:0}
+details summary{cursor:pointer;font-weight:600;font-size:14px;padding:18px 20px;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details summary::-webkit-details-marker{display:none}
+details summary::after{content:"+";font-size:20px;font-weight:400;color:var(--mu);line-height:1}
+details[open] summary::after{content:"–"}
+details .in{padding:0 20px 20px}
+.add{display:flex;gap:10px;flex:1 1 100%;padding-top:18px;border-top:1px solid var(--bd)}
+.add input{flex:1;min-width:0}
+.add button{width:auto;white-space:nowrap}
+button.ghost{background:var(--field);color:var(--tx)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:18px}
+.stat{background:var(--field);border-radius:12px;padding:12px 14px}
+.stat .hint{margin:0 0 2px}
+.stat b{font-size:18px;font-weight:650;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.tools{display:flex;gap:10px;margin-bottom:6px}
+.tools select{flex:1;padding:9px 32px 9px 12px;font-size:13px}
+.it{padding:14px 0;border-bottom:1px solid var(--bd)}
+.it:last-child{border:0;padding-bottom:0}
+.it-h{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.it-h b{font-weight:600;word-break:break-word}
+.chip{font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;background:var(--field);color:var(--mu);white-space:nowrap}
+.chip.s{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.it-n{display:flex;gap:6px 20px;flex-wrap:wrap;margin-top:6px;font-size:13px;color:var(--mu)}
+.it-n b{color:var(--tx);font-weight:600;font-variant-numeric:tabular-nums}
+.it-n b.pos{color:var(--ok)}.it-n b.neg{color:var(--bad)}
+.it-a{flex-wrap:wrap;display:flex;gap:8px;margin-top:10px;align-items:center}
+.it-a input.qn{width:72px}
+.it-a input{width:110px;padding:8px 10px;font-size:14px}
+.it-a button{width:auto;padding:8px 14px;font-size:13px}
+.it-a .x{margin-left:auto;background:none;color:var(--bad)}
+.it-a .x2{margin-left:auto;display:flex;gap:8px}
+.it-a button.danger{background:var(--bad);color:#fff}
+.log{margin-top:10px;padding:8px 12px;background:var(--field);border-radius:10px;font-size:12px;color:var(--mu);max-height:132px;overflow:auto}
+.log>div{display:flex;justify-content:space-between;gap:10px;padding:3px 0;flex-wrap:wrap}
+.log b{font-weight:600;font-variant-numeric:tabular-nums}
+.log b.pos{color:var(--ok)}.log b.neg{color:var(--bad)}
+.ch-top{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.ch-total{font-size:32px;font-weight:700;letter-spacing:-.025em;font-variant-numeric:tabular-nums}
+.delta{font-size:13px;font-weight:600}
+.delta.up{color:var(--ok)}.delta.down{color:var(--bad)}.delta.nw{color:var(--mu)}
+.ch-wrap{position:relative}
+#chSvg{display:block;width:100%;touch-action:pan-y;overflow:visible}
+#chSvg text{fill:var(--mu);font-size:11px;font-family:inherit}
+#chSvg .gl{stroke:color-mix(in srgb,var(--mu) 28%,transparent);stroke-width:1}
+.tip{position:absolute;top:6px;pointer-events:none;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:8px 10px;font-size:12px;box-shadow:0 6px 20px rgba(0,0,0,.14);white-space:nowrap;z-index:2;line-height:1.5}
+.tip b{font-variant-numeric:tabular-nums}
+.tip .th{color:var(--mu);margin-bottom:2px}
+.k{display:inline-block;width:14px;height:0;border-top:2px solid var(--s1);vertical-align:middle;margin-right:6px}
+.k.d{border-top:2px dotted var(--mu)}
+.seg{display:flex;gap:4px;background:var(--field);border-radius:12px;padding:4px;margin-top:14px}
+.seg button{flex:1;width:auto;background:transparent;color:var(--mu);padding:8px 6px;font-size:13px;border-radius:9px}
+.seg button.on{background:var(--card);color:var(--tx);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.seg button:hover{opacity:1;color:var(--tx)}
+.legend{display:flex;gap:6px 18px;flex-wrap:wrap;justify-content:center;margin-top:12px;font-size:12px;color:var(--mu)}
+.tb{margin-top:10px}
+.tb summary{padding:6px 0;font-size:12px;font-weight:500;color:var(--mu);justify-content:flex-start;gap:6px}
+.tb summary::after{content:"";}
+.tb table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;font-variant-numeric:tabular-nums}
+.tb th{font-weight:500;color:var(--mu);text-align:right;padding:4px 0}
+.tb td{padding:5px 0;border-top:1px solid var(--bd);text-align:right}
+.tb th:first-child,.tb td:first-child{text-align:left}
+.dr{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+.dr input{width:auto;flex:1 1 190px;padding:8px 10px}
+.dr button{width:auto;padding:8px 14px;font-size:13px}
+.lx{background:none;color:var(--mu);width:auto;min-height:0;padding:0 2px 0 6px;font-size:11px;border-radius:4px;vertical-align:baseline}
+.lx:hover{color:var(--bad);opacity:1}
+.empty{color:var(--mu);font-size:14px;padding:6px 0}
+html{-webkit-tap-highlight-color:transparent}
+button,input,select,summary{touch-action:manipulation}
+body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+.w{display:flex;flex-direction:column}
+.cols,.col-a,.col-b{display:contents}
+@media (max-width:820px){input,select{font-size:16px}}
+@media (pointer:coarse){button{min-height:44px}.it-a button{min-height:40px}}
+@media (min-width:1000px){
+ body{padding-top:40px;padding-bottom:64px}
+ .w{max-width:1240px;display:block}
+ h1{font-size:30px;margin:0 4px 24px}
+ h1 em{font-size:15px}
+ .cols{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:20px;align-items:start;margin-bottom:6px}
+ .col-a,.col-b{display:block}
+ .col-b{position:sticky;top:20px;max-height:calc(100vh - 40px);overflow:auto;scrollbar-width:none;padding-bottom:2px}
+ .col-b::-webkit-scrollbar{display:none}
+ .card{padding:24px}
+ .res{padding:30px 28px}
+ .big{font-size:56px}
+ .ch-total{font-size:38px}
+ #list{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+ .it,.it:last-child{border:1px solid var(--bd);border-radius:14px;padding:16px;margin:0}
+ .it-a{flex-wrap:wrap}
+ .stats{grid-template-columns:repeat(4,1fr)}
+ .tools select{flex:0 1 220px}
+}
+@media (min-width:1400px){.w{max-width:1320px}}
+@media (max-width:480px){.big{font-size:38px}body{padding-top:16px}}
+</style>
+</head>
+<body>
+<div class="w">
+<h1>eBay <span>Fee Calculator</span> <em>by DEDE</em></h1>
+
+<div class="cols">
+<div class="col-a">
+<div style="order:2" class="card">
+<h2>Ürün</h2>
+<div class="g">
+ <div><label>Sold price ($)</label><input autocomplete="off" id="sold" type="number" step="0.01" placeholder="0"></div>
+ <div><label>Shipping charged ($)</label><input autocomplete="off" id="shipC" type="number" step="0.01" placeholder="0"></div>
+ <div><label>Item cost – ürün fiyatı ($)</label><input autocomplete="off" id="raw" type="number" step="0.01" value="5"><div class="hint" id="adjHint"></div></div>
+ <div><label>Item cost çarpanı</label><input autocomplete="off" id="mult" type="number" step="0.01" value="1.15"><div class="hint">Otomatik çarpılır (ürün × çarpan)</div></div>
+ <div><label>Shipping cost ($)</label><input autocomplete="off" id="shipCost" type="number" step="0.01" value="0.60"></div>
+</div>
+</div>
+
+<div style="order:3" class="card">
+<h2>Mağaza &amp; ücretler</h2>
+<div class="g">
+ <div><label>eBay store?</label><select autocomplete="off" id="store"><option value="0">No</option><option value="1">Yes (Basic)</option></select></div>
+ <div><label>Seller level</label><select autocomplete="off" id="level"><option value="top">Top Rated</option><option value="above" selected>Above Standard</option><option value="below">Below Standard</option></select></div>
+ <div><label>Oversea sales?</label><select autocomplete="off" id="over"><option value="1" selected>Yes</option><option value="0">No</option></select></div>
+ <div><label>Item category</label><select autocomplete="off" id="cat"></select></div>
+ <div><label>Promoted ad rate (%)</label><input autocomplete="off" id="promo" type="number" step="0.1" placeholder="0"></div>
+ <div><label>Donated to charity (%)</label><input autocomplete="off" id="char" type="number" step="0.1" placeholder="0"></div>
+</div>
+</div>
+
+<div style="order:4" class="card">
+<h2>Sales tax</h2>
+<div class="g">
+ <div><label>Calculation method</label><select autocomplete="off" id="tmode"><option value="p">% Percentage</option><option value="f">Fixed amount</option></select></div>
+ <div><label>Amount</label><input autocomplete="off" id="tamt" type="number" step="0.01" placeholder="0"></div>
+ <div><label>Tax includes shipping?</label><select autocomplete="off" id="tship"><option value="1">Yes</option><option value="0">No</option></select></div>
+</div>
+</div>
+
+<details style="order:9" class="card">
+<summary>Ücret ayarları</summary>
+<div class="in">
+<div class="hint" style="margin:0 0 14px">eBay değiştirirse buradan güncelle.</div>
+<div class="g">
+ <div><label>Store ücret indirimi (puan)</label><input autocomplete="off" id="storeDisc" type="number" step="0.1" value="0.9"></div>
+ <div><label>Sipariş başı ücret ($)</label><input autocomplete="off" id="fixed" type="number" step="0.01" value="0.40"></div>
+ <div><label>≤ $10 sipariş ücreti ($)</label><input autocomplete="off" id="fixedLow" type="number" step="0.01" value="0.30"></div>
+ <div><label>Uluslararası ücret (%)</label><input autocomplete="off" id="intl" type="number" step="0.01" value="1.65"></div>
+ <div><label>Top Rated indirimi (%)</label><input autocomplete="off" id="topDisc" type="number" step="1" value="10"></div>
+ <div><label>Below Standard ek ücret (puan)</label><input autocomplete="off" id="belowFee" type="number" step="0.1" value="6"></div>
+</div>
+<div class="hint" style="margin:18px 0 10px">Kategori oranları</div>
+<div class="g" id="catRates"></div>
+<div class="hint" style="margin-top:14px">Oranlar yaklaşık ABD değerleridir. Güncel oranlar için eBay "Selling fees" sayfasına bak.</div>
+</div>
+</details>
+</div>
+<div class="col-b">
+<div style="order:1" class="card res">
+<div class="top">
+ <div class="main"><div class="hint">Net profit</div><div class="big" id="profit">–</div></div>
+ <div class="sub">
+  <div><div class="hint">Margin</div><div class="sm" id="margin">–</div></div>
+  <div><div class="hint">ROI</div><div class="sm" id="roi">–</div><div class="note">Ürün + kargo maliyetine göre kâr oranı</div></div>
+ </div>
+ <div class="add">
+  <input autocomplete="off" id="pname" data-skip="1" type="text" placeholder="Ürün adı" maxlength="80">
+  <button id="add">Listeye ekle</button>
+ </div>
+</div>
+</div>
+
+<div style="order:5" class="card">
+<h2>Hedef marj</h2>
+<div class="g tg">
+ <div><label>Hedef marj (%)</label><input autocomplete="off" id="tm" data-skip="1" type="number" step="0.1" placeholder="örn. 20"></div>
+ <div><label>Satmam gereken fiyat</label><div class="sp" id="sp">–</div></div>
+ <div><button id="ap">Sold price'a uygula</button></div>
+</div>
+<div class="hint" id="spHint" style="margin-top:12px"></div>
+</div>
+
+<details style="order:6" class="card">
+<summary>Detay (1 sipariş başına)</summary>
+<div class="in"><div id="rows"></div></div>
+</details>
+</div>
+</div>
+
+<div style="order:7" class="card">
+<h2>Gelir</h2>
+<div class="ch-top"><div class="ch-total" id="chTotal">$0.00</div><span class="delta" id="chDelta"></span></div>
+<div class="ch-wrap" id="chWrap"><svg id="chSvg" role="img" aria-label="Gelir grafiği"></svg><div class="tip" id="chTip" hidden></div></div>
+<div class="seg" id="chSeg"><button data-m="week" class="on">Haftalık</button><button data-m="month">Aylık</button><button data-m="year">Yıllık</button></div>
+<div class="legend"><span><i class="k"></i><span id="lgCur"></span></span><span><i class="k d"></i><span id="lgPrev"></span></span></div>
+<details class="tb"><summary>Tablo olarak göster</summary><div id="chTable"></div></details>
+</div>
+
+<div style="order:8" class="card">
+<h2>Ürün listem</h2>
+<div class="stats">
+ <div class="stat"><div class="hint">Satılan</div><b id="stSold">0</b></div>
+ <div class="stat"><div class="hint">Gelir</div><b id="stRev">$0.00</b></div>
+ <div class="stat"><div class="hint">Net kâr</div><b id="stProf">$0.00</b></div>
+ <div class="stat"><div class="hint">Bekleyen ürün</div><b id="stPend">0</b></div>
+</div>
+<div class="tools">
+ <select autocomplete="off" id="lf" data-skip="1"><option value="all">Tümü</option><option value="listed">Listede</option><option value="sold">Satıldı</option></select>
+ <select autocomplete="off" id="ls" data-skip="1"><option value="new">En yeni</option><option value="profit">En çok kâr</option></select>
+ <button class="ghost" id="csv" style="width:auto;padding:9px 14px;font-size:13px">CSV</button>
+</div>
+<div id="list"></div>
+</div>
+</div>
+
+<script>
+var CATS=[["Everything else",13.6],["Books, movies & music",14.6],["Clothing & accessories",13.6],["Jewelry",15],["Watches",15],["Sneakers ($150+)",8],["Custom",13.6]];
+var $=function(i){return document.getElementById(i)};
+var n=function(i){var v=parseFloat($(i).value);return isNaN(v)?0:v};
+var m=function(x){return (x<0?"-":"")+"$"+Math.abs(x).toFixed(2)};
+CATS.forEach(function(c,i){
+ var o=document.createElement("option");o.value=i;o.textContent=c[0];$("cat").appendChild(o);
+ var d=document.createElement("div");d.innerHTML='<label>'+c[0]+' (%)</label><input autocomplete="off" type="number" step="0.1" id="cr'+i+'" value="'+c[1]+'">';$("catRates").appendChild(d);
+});
+document.querySelectorAll("input[type=number]").forEach(function(e){e.setAttribute("inputmode","decimal")});
+document.addEventListener("focusin",function(e){if(e.target.matches&&e.target.matches("input[type=number]"))e.target.select()});
+function prof(sold){
+ var sc=n("shipC"),cost=n("raw")*(n("mult")||1),sh=n("shipCost");
+ var tax=$("tmode").value==="p"?(sold+($("tship").value==="1"?sc:0))*n("tamt")/100:n("tamt");
+ var total=sold+sc+tax;
+ var rate=n("cr"+$("cat").value);
+ if($("store").value==="1")rate-=n("storeDisc");
+ var fvf=total*rate/100;
+ if($("level").value==="top")fvf*=1-n("topDisc")/100;
+ var below=$("level").value==="below"?total*n("belowFee")/100:0;
+ var fixed=total<=10?n("fixedLow"):n("fixed");
+ var intl=$("over").value==="1"?total*n("intl")/100:0;
+ var promo=total*n("promo")/100;
+ var charity=sold*n("char")/100;
+ return sold+sc-(fvf+below+fixed+intl+promo)-charity-cost-sh;
+}
+var suggested=null;
+function solve(){
+ var t=$("tm").value===""?null:parseFloat($("tm").value)/100,sc=n("shipC");
+ suggested=null;
+ if(t===null||isNaN(t)){$("sp").textContent="–";$("spHint").textContent="Hedef marjını yaz, fiyatı otomatik hesaplayayım.";return}
+ var g=function(s){return prof(s)-t*(s+sc)};
+ var lo=0,hi=100000;
+ if(g(hi)<0){$("sp").textContent="Ulaşılamaz";$("spHint").textContent="Bu marj, ücret oranlarıyla mümkün değil. Hedefi düşür.";return}
+ for(var i=0;i<60;i++){var mid=(lo+hi)/2;if(g(mid)>=0)hi=mid;else lo=mid}
+ var p=Math.ceil(hi*100)/100;
+ suggested=p;
+ $("sp").textContent=m(p);
+ $("spHint").textContent="Bu fiyatta marj ≈ %"+((prof(p)/(p+sc))*100).toFixed(1)+", net kâr "+m(prof(p))+" (satış + kargo geliri üzerinden)";
+}
+function calc(){
+ var sold=n("sold"),sc=n("shipC"),raw=n("raw"),mult=n("mult")||1,sh=n("shipCost");
+ var cost=raw*mult;
+ $("adjHint").textContent="= "+m(cost)+" ("+raw+" × "+mult+")";
+ var tax=$("tmode").value==="p"?(sold+($("tship").value==="1"?sc:0))*n("tamt")/100:n("tamt");
+ var total=sold+sc+tax;
+ var rate=n("cr"+$("cat").value);
+ if($("store").value==="1")rate-=n("storeDisc");
+ var fvf=total*rate/100;
+ if($("level").value==="top")fvf*=1-n("topDisc")/100;
+ var below=$("level").value==="below"?total*n("belowFee")/100:0;
+ var fixed=total<=10?n("fixedLow"):n("fixed");
+ var intl=$("over").value==="1"?total*n("intl")/100:0;
+ var promo=total*n("promo")/100;
+ var charity=sold*n("char")/100;
+ var fees=fvf+below+fixed+intl+promo;
+ var revenue=sold+sc;
+ var profit=revenue-fees-charity-cost-sh;
+ var rows=[["Satış + kargo geliri",m(revenue)],["Sales tax (alıcıdan, eBay toplar)",m(tax)],["Final value fee ("+rate.toFixed(1)+"%)",m(-fvf)]];
+ if(below)rows.push(["Below Standard ek ücret",m(-below)]);
+ rows.push(["Sipariş başı ücret",m(-fixed)]);
+ if(intl)rows.push(["Uluslararası ücret",m(-intl)]);
+ if(promo)rows.push(["Promoted listing",m(-promo)]);
+ if(charity)rows.push(["Bağış",m(-charity)]);
+ rows.push(["Toplam eBay ücreti",m(-(fees))],["Item cost ("+raw+" × "+mult+")",m(-cost)],["Kargo maliyeti",m(-sh)]);
+ $("rows").innerHTML=rows.map(function(r){return '<div class="r"><span>'+r[0]+'</span><b>'+r[1]+'</b></div>'}).join("");
+ var p=$("profit");var tot=profit;if(revenue<=0){p.textContent="$0.00";p.className="big"}else{p.textContent=m(tot);p.className="big "+(tot<3?"neg":tot<=6?"mid":"pos")}
+ $("margin").textContent=revenue>0?(profit/revenue*100).toFixed(1)+"%":"–";
+ $("roi").textContent=revenue>0&&(cost+sh)>0?(profit/(cost+sh)*100).toFixed(1)+"%":"–";
+ solve();
+}
+document.querySelectorAll("input:not([data-skip]),select:not([data-skip])").forEach(function(e){e.addEventListener("input",calc);e.addEventListener("change",calc)});
+$("tm").addEventListener("input",solve);
+$("ap").addEventListener("click",function(){if(suggested!==null){$("sold").value=suggested.toFixed(2);calc()}});
+
+/* ---- Ürün listesi ---- */
+var KEY="ebayList",items=[],pendingDel=null;
+try{items=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){items=[]}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(items))}catch(e){}}
+function fields(){return [].slice.call(document.querySelectorAll("input:not([data-skip]),select:not([data-skip])")).filter(function(e){return e.id})}
+function evalSnap(snap,sold){
+ var els=fields(),bak=els.map(function(e){return e.value});
+ els.forEach(function(e){if(e.id in snap)e.value=snap[e.id]});
+ var r={profit:prof(sold),revenue:sold+n("shipC")};
+ els.forEach(function(e,i){e.value=bak[i]});
+ return r;
+}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function cls(x){return x>=0?"pos":"neg"}
+function dts(t){return new Date(t).toLocaleString("tr-TR")}
+function dt(t){return new Date(t).toLocaleDateString("tr-TR")}
+function su(i){return (i.sales||[]).reduce(function(a,s){return a+s.n},0)}
+function sRev(i){return (i.sales||[]).reduce(function(a,s){return a+s.rev*s.n},0)}
+function sPro(i){return (i.sales||[]).reduce(function(a,s){return a+s.act*s.n},0)}
+function nid(){return Date.now()*1000+Math.floor(Math.random()*1000)}
+var openDate=null;
+items.forEach(function(i){
+ if(!i.sales)i.sales=i.status==="sold"?[{n:i.qty||1,price:i.soldPrice,act:i.act,rev:i.rev,at:i.soldAt}]:[];
+ i.sales.forEach(function(x){if(!x.sid)x.sid=nid()});
+});
+function lastAt(i){return Math.max.apply(null,i.sales.map(function(x){return x.at}))}
+function nowLocal(){var d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,16)}
+function renderList(){
+ drawChart();
+ var sold=items.filter(function(i){return su(i)>0}),pend=items.filter(function(i){return su(i)===0});
+ var qty=sold.reduce(function(a,i){return a+su(i)},0),rev=sold.reduce(function(a,i){return a+sRev(i)},0),pr=sold.reduce(function(a,i){return a+sPro(i)},0);
+ $("stSold").textContent=qty;$("stRev").textContent=m(rev);
+ $("stProf").textContent=m(pr);$("stProf").className=cls(pr);
+ $("stPend").textContent=pend.length;
+ var f=$("lf").value,v=items.filter(function(i){return f==="all"||(f==="sold")===(su(i)>0)});
+ if($("ls").value==="profit")v=v.slice().sort(function(a,b){return (su(b)?sPro(b):b.est)-(su(a)?sPro(a):a.est)});
+ if(!v.length){$("list").innerHTML='<div class="empty">'+(items.length?"Bu filtrede ürün yok.":"Henüz ürün yok. Hesapla, ürün adını yaz ve “Listeye ekle”ye bas.")+'</div>';return}
+ $("list").innerHTML=v.map(function(i){
+  var k=su(i),isS=k>0;
+  var h='<div class="it"><div class="it-h"><b>'+esc(i.name)+'</b><span class="chip'+(isS?" s":"")+'">'+(isS?k+" adet satıldı":"Listede")+'</span></div><div class="it-n">';
+  h+='<span>Liste fiyatı <b>'+m(i.listed)+'</b></span>';
+  if(isS){h+='<span>Gelir <b>'+m(sRev(i))+'</b></span><span>Net kâr <b class="'+cls(sPro(i))+'">'+m(sPro(i))+'</b></span><span>Son satış '+dt(lastAt(i))+'</span>'}
+  else h+='<span>'+dt(i.added)+'</span>';
+  h+='</div><div class="it-a"><button data-act="sell" data-id="'+i.id+'">Satış ekle</button><button class="ghost" data-act="dopen" data-id="'+i.id+'">Eski tarihli satış</button>';
+  if(isS)h+='<button class="ghost" data-act="undo" data-id="'+i.id+'">Son satışı geri al</button>';
+  if(pendingDel===i.id)h+='<span class="x2"><button class="danger" data-act="delok" data-id="'+i.id+'">Evet, sil</button><button class="ghost" data-act="delno" data-id="'+i.id+'">Vazgeç</button></span>';
+  else h+='<button class="x" data-act="del" data-id="'+i.id+'">Sil</button>';
+  h+='</div>';
+  if(openDate===i.id)h+='<div class="dr"><input type="datetime-local" autocomplete="off" data-skip="1" id="sd'+i.id+'" max="'+nowLocal()+'" value="'+nowLocal()+'"><button data-act="dok" data-id="'+i.id+'">Ekle</button><button class="ghost" data-act="dno" data-id="'+i.id+'">İptal</button></div>';
+  if(isS){var ss=i.sales.slice().sort(function(a,b){return a.at-b.at}),tn=ss.length;h+='<div class="log">'+ss.map(function(x,j){return '<div><span>#'+(j+1)+' · '+dts(x.at)+'</span><span>'+x.n+' adet · '+m(x.price)+' · kâr <b class="'+cls(x.act*x.n)+'">'+m(x.act*x.n)+'</b> <button class="lx" title="Bu satışı sil" data-act="rm" data-id="'+i.id+'" data-sid="'+x.sid+'">✕</button></span></div>'}).reverse().join("")+'</div>'}
+  return h+'</div>';
+ }).join("");
+}
+$("add").addEventListener("click",function(){
+ var snap={};fields().forEach(function(e){snap[e.id]=e.value});
+ var s=n("sold");
+ if(s<=0){var b0=$("add");b0.textContent="Önce satış fiyatı gir";setTimeout(function(){b0.textContent="Listeye ekle"},1600);return}
+ items.unshift({id:nid(),name:$("pname").value.trim()||"İsimsiz ürün",added:Date.now(),snap:snap,listed:s,est:prof(s),sales:[]});
+ save();$("pname").value="";renderList();
+ var b=$("add");b.textContent="Eklendi ✓";setTimeout(function(){b.textContent="Listeye ekle"},1200);
+});
+$("pname").addEventListener("keydown",function(e){if(e.key==="Enter")$("add").click()});
+$("list").addEventListener("click",function(e){
+ var b=e.target.closest("button[data-act]");if(!b)return;
+ var id=+b.dataset.id,it=items.filter(function(i){return i.id===id})[0];if(!it)return;
+ if(b.dataset.act==="del"){pendingDel=id;renderList();return}
+ if(b.dataset.act==="delno"){pendingDel=null;renderList();return}
+ if(b.dataset.act==="delok"){pendingDel=null;items=items.filter(function(i){return i.id!==id})}
+ else if(b.dataset.act==="sell"){
+  var r=evalSnap(it.snap,it.listed);
+  it.sales.push({sid:nid(),n:1,price:it.listed,act:r.profit,rev:r.revenue,at:Date.now()});
+ }else if(b.dataset.act==="dopen"){openDate=id;renderList();return}
+ else if(b.dataset.act==="dno"){openDate=null;renderList();return}
+ else if(b.dataset.act==="dok"){
+  var at=new Date($("sd"+id).value).getTime();
+  if(isNaN(at)||at>Date.now()+6e4)return;
+  var r2=evalSnap(it.snap,it.listed);
+  it.sales.push({sid:nid(),n:1,price:it.listed,act:r2.profit,rev:r2.revenue,at:at});openDate=null;
+ }else if(b.dataset.act==="rm"){var sid=+b.dataset.sid;it.sales=it.sales.filter(function(x){return x.sid!==sid})}
+ else if(b.dataset.act==="undo"){it.sales.pop()}
+ save();renderList();
+});
+$("lf").addEventListener("change",renderList);$("ls").addEventListener("change",renderList);
+$("csv").addEventListener("click",function(){
+ var rows=[["Ürün","Satılan adet","Liste fiyatı","Gelir","Net kâr","Tahmini kâr/adet","Eklenme","Son satış"]];
+ items.forEach(function(i){var k=su(i);rows.push([i.name,k,i.listed.toFixed(2),sRev(i).toFixed(2),sPro(i).toFixed(2),i.est.toFixed(2),dt(i.added),k?dt(i.sales[i.sales.length-1].at):""])});
+ var c="﻿"+rows.map(function(r){return r.map(function(x){return '"'+String(x).replace(/"/g,'""')+'"'}).join(";")}).join("\n");
+ var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([c],{type:"text/csv"}));a.download="ebay-urunler.csv";a.click();
+});
+/* ---- Gelir grafiği ---- */
+var chartMode="week",MS={week:{len:7,m:0},month:{len:30,m:0},year:{len:12,m:1}},CS=null;
+function dnum(t){var d=new Date(t);return Math.round(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5)}
+function mnum(t){var d=new Date(t);return d.getFullYear()*12+d.getMonth()}
+function fDay(n,y){return new Date(n*864e5).toLocaleDateString("tr-TR",{day:"numeric",month:"short",year:y?"numeric":undefined,timeZone:"UTC"})}
+function fMon(n,y){return new Date(Date.UTC(Math.floor(n/12),((n%12)+12)%12,1)).toLocaleDateString("tr-TR",{month:"short",year:y?"numeric":undefined,timeZone:"UTC"})}
+function series(){
+ var c=MS[chartMode],L=c.len,isM=!!c.m,now=Date.now(),base=(isM?mnum(now):dnum(now))-(L-1),cur=[],prev=[],i;
+ for(i=0;i<L;i++){cur.push(0);prev.push(0)}
+ items.forEach(function(it){(it.sales||[]).forEach(function(x){
+  var v=x.rev*x.n,k=(isM?mnum(x.at):dnum(x.at))-base;
+  if(k>=0&&k<L)cur[k]+=v;else if(k>=-L&&k<0)prev[k+L]+=v;
+ })});
+ return {cur:cur,prev:prev,L:L,lab:function(k,y){return isM?fMon(base+k,y):fDay(base+k,y)},plab:function(k,y){return isM?fMon(base+k-L,y):fDay(base+k-L,y)}};
+}
+function niceMax(v){if(v<=0)return 10;var p=Math.pow(10,Math.floor(Math.log10(v))),c=[1,2,4,6,8,10];for(var i=0;i<c.length;i++)if(c[i]*p>=v)return c[i]*p;return 10*p}
+function fy(v){return "$"+(v>=1000?(+(v/1000).toFixed(1))+"K":(+v.toFixed(2)))}
+function curve(p){
+ var n=p.length,dx=[],mk=[],t=[],i;
+ for(i=0;i<n-1;i++){dx[i]=p[i+1][0]-p[i][0];mk[i]=(p[i+1][1]-p[i][1])/dx[i]}
+ t[0]=mk[0];t[n-1]=mk[n-2];
+ for(i=1;i<n-1;i++)t[i]=mk[i-1]*mk[i]<=0?0:(mk[i-1]+mk[i])/2;
+ for(i=0;i<n-1;i++){if(mk[i]===0){t[i]=0;t[i+1]=0}else{var a=t[i]/mk[i],b=t[i+1]/mk[i],q=a*a+b*b;if(q>9){var k=3/Math.sqrt(q);t[i]=k*a*mk[i];t[i+1]=k*b*mk[i]}}}
+ var d="M"+p[0][0]+" "+p[0][1];
+ for(i=0;i<n-1;i++)d+=" C"+(p[i][0]+dx[i]/3)+" "+(p[i][1]+t[i]*dx[i]/3)+","+(p[i+1][0]-dx[i]/3)+" "+(p[i+1][1]-t[i+1]*dx[i]/3)+","+p[i+1][0]+" "+p[i+1][1];
+ return d;
+}
+function drawChart(){
+ $("chTip").hidden=true;
+ var wrap=$("chWrap"),W=wrap.clientWidth||320,H=W>800?290:W<420?190:230,pl=40,pr=10,pt=10,pb=26;
+ var d=series(),L=d.L,sum=function(a){return a.reduce(function(x,y){return x+y},0)},tot=sum(d.cur),ptot=sum(d.prev);
+ $("chTotal").textContent=m(tot);
+ var dl=$("chDelta");
+ if(ptot>0){var pc=(tot-ptot)/ptot*100;dl.textContent=(pc>=0?"↗ ":"↘ ")+Math.abs(pc).toFixed(0)+"%";dl.className="delta "+(pc>=0?"up":"down")}
+ else if(tot>0){dl.textContent="Yeni";dl.className="delta nw"}else{dl.textContent="";dl.className="delta"}
+ var top=niceMax(Math.max.apply(null,d.cur.concat(d.prev))*1.05);
+ var x=function(i){return pl+i*(W-pl-pr)/(L-1)},y=function(v){return pt+(1-v/top)*(H-pt-pb)},y0=y(0);
+ var cp=d.cur.map(function(v,i){return [x(i),y(v)]}),pp=d.prev.map(function(v,i){return [x(i),y(v)]});
+ var g='<defs><linearGradient id="chg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--s1)" stop-opacity=".2"/><stop offset="1" style="stop-color:var(--s1)" stop-opacity="0"/></linearGradient></defs>';
+ [0,top/2,top].forEach(function(v){g+='<line class="gl" x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y(v)+'" y2="'+y(v)+'"/><text x="'+(pl-8)+'" y="'+(y(v)+4)+'" text-anchor="end">'+fy(v)+'</text>'});
+ var cnt=Math.min(L,Math.max(2,Math.floor(W/78)));
+ for(var j=0;j<cnt;j++){var i=Math.round(j*(L-1)/(cnt-1));g+='<text x="'+x(i)+'" y="'+(H-6)+'" text-anchor="'+(j===0?"start":j===cnt-1?"end":"middle")+'">'+d.lab(i)+'</text>'}
+ g+='<path d="'+curve(cp)+' L'+x(L-1)+' '+y0+' L'+x(0)+' '+y0+' Z" fill="url(#chg)"/>';
+ g+='<path d="'+curve(pp)+'" fill="none" style="stroke:var(--mu)" stroke-width="1.75" stroke-linecap="round" stroke-dasharray="0.1 5"/>';
+ g+='<path d="'+curve(cp)+'" fill="none" style="stroke:var(--s1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+ if(!tot&&!ptot)g+='<text x="'+(W/2)+'" y="'+((H-pb+pt)/2-8)+'" text-anchor="middle">Bu dönemde satış yok</text>';
+ g+='<line id="chX" class="gl" y1="'+pt+'" y2="'+y0+'" style="display:none"/><circle id="chP" r="3.5" style="display:none;fill:var(--mu);stroke:var(--card);stroke-width:2"/><circle id="chD" r="5" style="display:none;fill:var(--s1);stroke:var(--card);stroke-width:2"/>';
+ var sv=$("chSvg");sv.setAttribute("viewBox","0 0 "+W+" "+H);sv.setAttribute("height",H);sv.innerHTML=g;
+ CS={d:d,W:W,H:H,pl:pl,pr:pr,x:x,y:y};
+ $("lgCur").textContent=d.lab(0)+" – "+d.lab(L-1,true);
+ $("lgPrev").textContent=d.plab(0)+" – "+d.plab(L-1,true);
+ var tb='<table><thead><tr><th>Dönem</th><th>Bu dönem</th><th>Önceki dönem</th></tr></thead><tbody>';
+ for(var r=0;r<L;r++)tb+='<tr><td>'+d.lab(r,true)+'</td><td>'+m(d.cur[r])+'</td><td>'+m(d.prev[r])+'</td></tr>';
+ $("chTable").innerHTML=tb+'</tbody></table>';
+}
+function chHide(){["chX","chP","chD"].forEach(function(i){var e=$(i);if(e)e.style.display="none"});$("chTip").hidden=true}
+function chMove(e){
+ if(!CS)return;
+ var r=$("chSvg").getBoundingClientRect(),L=CS.d.L,sx=CS.W/r.width,px=(e.clientX-r.left)*sx;
+ var i=Math.max(0,Math.min(L-1,Math.round((px-CS.pl)/((CS.W-CS.pl-CS.pr)/(L-1)))));
+ var cx=CS.x(i),X=$("chX"),D=$("chD"),P=$("chP");
+ X.setAttribute("x1",cx);X.setAttribute("x2",cx);X.style.display="";
+ D.setAttribute("cx",cx);D.setAttribute("cy",CS.y(CS.d.cur[i]));D.style.display="";
+ P.setAttribute("cx",cx);P.setAttribute("cy",CS.y(CS.d.prev[i]));P.style.display="";
+ var t=$("chTip");
+ t.innerHTML='<div class="th">'+CS.d.lab(i,true)+'</div><div><i class="k"></i><b>'+m(CS.d.cur[i])+'</b></div><div><i class="k d"></i><b>'+m(CS.d.prev[i])+'</b> <span style="color:var(--mu)">· '+CS.d.plab(i,true)+'</span></div>';
+ t.hidden=false;
+ var tw=t.offsetWidth,left=cx/sx+14;if(left+tw>r.width)left=cx/sx-tw-14;t.style.left=Math.max(0,left)+"px";
+}
+$("chSvg").addEventListener("pointermove",chMove);
+$("chSvg").addEventListener("pointerdown",chMove);
+$("chSvg").addEventListener("pointerleave",function(e){if(e.pointerType!=="touch")chHide()});
+document.addEventListener("pointerdown",function(e){if(!e.target.closest("#chWrap"))chHide()});
+$("chSeg").addEventListener("click",function(e){
+ var b=e.target.closest("button[data-m]");if(!b)return;
+ chartMode=b.dataset.m;[].forEach.call(this.children,function(c){c.classList.toggle("on",c===b)});drawChart();
+});
+var rz=0;window.addEventListener("resize",function(){cancelAnimationFrame(rz);rz=requestAnimationFrame(drawChart)});
+function resetEntry(){
+ ["sold","shipC","tamt","promo","char","tm","pname"].forEach(function(i){$(i).value=""});
+ calc();
+}
+window.addEventListener("pageshow",function(e){if(e.persisted)resetEntry()});
+resetEntry();renderList();
+</script>
+</body>
+</html>
