@@ -272,7 +272,7 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
 <div class="tools">
  <select autocomplete="off" id="lf" data-skip="1"><option value="all">Tümü</option><option value="listed">Listede</option><option value="sold">Satıldı</option></select>
  <select autocomplete="off" id="ls" data-skip="1"><option value="new">En yeni</option><option value="profit">En çok kâr</option></select>
- <button class="ghost" id="csv" style="width:auto;padding:9px 14px;font-size:13px">CSV</button>
+ <button class="ghost" id="csv" style="width:auto;padding:9px 14px;font-size:13px">Excel</button>
 </div>
 <div id="list"></div>
 </div>
@@ -437,11 +437,66 @@ $("list").addEventListener("click",function(e){
  save();renderList();
 });
 $("lf").addEventListener("change",renderList);$("ls").addEventListener("change",renderList);
+/* ---- Excel (.xlsx) dışa aktarma ---- */
+function crc32(u8){var t=crc32.t;if(!t){t=crc32.t=[];for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}}var x=0xFFFFFFFF;for(var i=0;i<u8.length;i++)x=t[(x^u8[i])&255]^(x>>>8);return (x^0xFFFFFFFF)>>>0}
+function zipStore(files){
+ var enc=new TextEncoder(),parts=[],central=[],offset=0,d=new Date();
+ var tm=(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1),dd=((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate();
+ files.forEach(function(f){
+  var nm=enc.encode(f.name),data=enc.encode(f.text),crc=crc32(data),size=data.length;
+  var lh=new DataView(new ArrayBuffer(30));
+  lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0x0800,true);lh.setUint16(10,tm,true);lh.setUint16(12,dd,true);lh.setUint32(14,crc,true);lh.setUint32(18,size,true);lh.setUint32(22,size,true);lh.setUint16(26,nm.length,true);
+  parts.push(new Uint8Array(lh.buffer),nm,data);
+  var ch=new DataView(new ArrayBuffer(46));
+  ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(8,0x0800,true);ch.setUint16(12,tm,true);ch.setUint16(14,dd,true);ch.setUint32(16,crc,true);ch.setUint32(20,size,true);ch.setUint32(24,size,true);ch.setUint16(28,nm.length,true);ch.setUint32(42,offset,true);
+  central.push(new Uint8Array(ch.buffer),nm);
+  offset+=30+nm.length+size;
+ });
+ var cd=0;central.forEach(function(p){cd+=p.length});
+ var e=new DataView(new ArrayBuffer(22));
+ e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cd,true);e.setUint32(16,offset,true);
+ return new Blob(parts.concat(central,[new Uint8Array(e.buffer)]),{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+}
+function xe(s){return String(s).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function xcol(i){return String.fromCharCode(65+i)}
+function cS(c,r,v,s){return '<c r="'+xcol(c)+r+'" t="inlineStr" s="'+(s||0)+'"><is><t xml:space="preserve">'+xe(v)+'</t></is></c>'}
+function cN(c,r,v,s){return '<c r="'+xcol(c)+r+'" s="'+(s||0)+'"><v>'+v+'</v></c>'}
+function cF(c,r,f,v,s){return '<c r="'+xcol(c)+r+'" s="'+(s||0)+'"><f>'+f+'</f><v>'+v+'</v></c>'}
+function xserial(t){var d=new Date(t);return (t-d.getTimezoneOffset()*6e4)/864e5+25569}
+function xsheet(widths,rows){
+ return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>'+widths.map(function(w,i){return '<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>'}).join("")+'</cols><sheetData>'+rows.map(function(r,i){return '<row r="'+(i+1)+'">'+r+'</row>'}).join("")+'</sheetData></worksheet>';
+}
+function buildXlsx(){
+ var all=[];
+ items.forEach(function(i){(i.sales||[]).forEach(function(x){all.push({at:x.at,name:i.name,n:x.n,price:x.price,rev:x.rev*x.n,pro:x.act*x.n})})});
+ all.sort(function(a,b){return b.at-a.at});
+ var r1=[cS(0,1,"Tarih ve saat",1)+cS(1,1,"Ürün",1)+cS(2,1,"Adet",1)+cS(3,1,"Satış fiyatı",1)+cS(4,1,"Gelir",1)+cS(5,1,"Net kâr",1)];
+ var tn=0,tr=0,tp=0;
+ all.forEach(function(x,k){var r=k+2;tn+=x.n;tr+=x.rev;tp+=x.pro;r1.push(cN(0,r,xserial(x.at),2)+cS(1,r,x.name)+cN(2,r,x.n)+cN(3,r,x.price,3)+cN(4,r,x.rev,3)+cN(5,r,x.pro,3))});
+ var last=all.length+1,tr1=all.length+2;
+ r1.push(cS(0,tr1,"Toplam",1)+cS(1,tr1,"",1)+cF(2,tr1,"SUM(C2:C"+Math.max(last,2)+")",tn,1)+cS(3,tr1,"",1)+cF(4,tr1,"SUM(E2:E"+Math.max(last,2)+")",tr,4)+cF(5,tr1,"SUM(F2:F"+Math.max(last,2)+")",tp,4));
+ var r2=[cS(0,1,"Ürün",1)+cS(1,1,"Liste fiyatı",1)+cS(2,1,"Satılan adet",1)+cS(3,1,"Gelir",1)+cS(4,1,"Net kâr",1)+cS(5,1,"Eklenme",1)];
+ items.forEach(function(i,k){var r=k+2;r2.push(cS(0,r,i.name)+cN(1,r,i.listed,3)+cN(2,r,su(i))+cN(3,r,sRev(i),3)+cN(4,r,sPro(i),3)+cN(5,r,xserial(i.added),2))});
+ var lastP=items.length+1,trp=items.length+2;
+ r2.push(cS(0,trp,"Toplam",1)+cS(1,trp,"",1)+cF(2,trp,"SUM(C2:C"+Math.max(lastP,2)+")",items.reduce(function(a,i){return a+su(i)},0),1)+cF(3,trp,"SUM(D2:D"+Math.max(lastP,2)+")",items.reduce(function(a,i){return a+sRev(i)},0),4)+cF(4,trp,"SUM(E2:E"+Math.max(lastP,2)+")",items.reduce(function(a,i){return a+sPro(i)},0),4)+cS(5,trp,"",1));
+ var NS='xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"',H='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+ return zipStore([
+  {name:"[Content_Types].xml",text:H+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'},
+  {name:"_rels/.rels",text:H+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
+  {name:"xl/workbook.xml",text:H+'<workbook '+NS+' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Satışlar" sheetId="1" r:id="rId1"/><sheet name="Ürünler" sheetId="2" r:id="rId2"/></sheets></workbook>'},
+  {name:"xl/_rels/workbook.xml.rels",text:H+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
+  {name:"xl/styles.xml",text:H+'<styleSheet '+NS+'><numFmts count="2"><numFmt numFmtId="164" formatCode="dd\\.mm\\.yyyy\\ hh:mm:ss"/><numFmt numFmtId="165" formatCode="&quot;$&quot;#,##0.00"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="1" fillId="0" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>'},
+  {name:"xl/worksheets/sheet1.xml",text:xsheet([22,30,8,14,14,14],r1)},
+  {name:"xl/worksheets/sheet2.xml",text:xsheet([30,14,14,14,14,22],r2)}
+ ]);
+}
 $("csv").addEventListener("click",function(){
- var rows=[["Ürün","Satılan adet","Liste fiyatı","Gelir","Net kâr","Tahmini kâr/adet","Eklenme","Son satış"]];
- items.forEach(function(i){var k=su(i);rows.push([i.name,k,i.listed.toFixed(2),sRev(i).toFixed(2),sPro(i).toFixed(2),i.est.toFixed(2),dt(i.added),k?dt(i.sales[i.sales.length-1].at):""])});
- var c="﻿"+rows.map(function(r){return r.map(function(x){return '"'+String(x).replace(/"/g,'""')+'"'}).join(";")}).join("\n");
- var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([c],{type:"text/csv"}));a.download="ebay-urunler.csv";a.click();
+ var blob=buildXlsx(),d=new Date(),nm="ebay-satislar-"+d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2)+".xlsx";
+ var file=null;try{file=new File([blob],nm,{type:blob.type})}catch(e){}
+ if(file&&window.matchMedia&&matchMedia("(pointer:coarse)").matches&&navigator.canShare&&navigator.canShare({files:[file]})){
+  navigator.share({files:[file],title:"eBay satışlar"}).catch(function(e){if(e&&e.name!=="AbortError")dl()});
+ }else dl();
+ function dl(){var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=nm;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1500)}
 });
 /* ---- Gelir grafiği ---- */
 var chartMode="week",MS={week:{len:7,m:0},month:{len:30,m:0},year:{len:12,m:1}},CS=null;
