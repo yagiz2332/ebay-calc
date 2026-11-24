@@ -11,6 +11,9 @@
 <meta name="apple-mobile-web-app-title" content="Fee Calc">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>eBay Fee Calculator by DEDE</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="preconnect" href="https://api.fontshare.com">
 <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
 <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap">
@@ -189,7 +192,7 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
 <h2>Sales tax</h2>
 <div class="g">
  <div><label>Calculation method</label><select autocomplete="off" id="tmode"><option value="p">% Percentage</option><option value="f">Fixed amount</option></select></div>
- <div><label>Amount</label><input autocomplete="off" id="tamt" type="number" step="0.01" placeholder="0"></div>
+ <div><label>Amount</label><input autocomplete="off" id="tamt" type="number" step="0.01" value="10" placeholder="0"></div>
  <div><label>Tax includes shipping?</label><select autocomplete="off" id="tship"><option value="1">Yes</option><option value="0">No</option></select></div>
 </div>
 </div>
@@ -246,10 +249,10 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
 
 <div style="order:7" class="card">
 <h2>Gelir</h2>
-<div class="ch-top"><div class="ch-total" id="chTotal">$0.00</div><span class="delta" id="chDelta"></span></div>
+<div class="ch-top"><div class="ch-total" id="chTotal">$0.00</div></div>
 <div class="ch-wrap" id="chWrap"><svg id="chSvg" role="img" aria-label="Gelir grafiği"></svg><div class="tip" id="chTip" hidden></div></div>
 <div class="seg" id="chSeg"><button data-m="week" class="on">Haftalık</button><button data-m="month">Aylık</button><button data-m="year">Yıllık</button></div>
-<div class="legend"><span><i class="k"></i><span id="lgCur"></span></span><span><i class="k d"></i><span id="lgPrev"></span></span></div>
+<div class="legend"><span><i class="k"></i><span id="lgCur"></span></span></div>
 <details class="tb"><summary>Tablo olarak göster</summary><div id="chTable"></div></details>
 </div>
 
@@ -441,13 +444,13 @@ function mnum(t){var d=new Date(t);return d.getFullYear()*12+d.getMonth()}
 function fDay(n,y){return new Date(n*864e5).toLocaleDateString("tr-TR",{day:"numeric",month:"short",year:y?"numeric":undefined,timeZone:"UTC"})}
 function fMon(n,y){return new Date(Date.UTC(Math.floor(n/12),((n%12)+12)%12,1)).toLocaleDateString("tr-TR",{month:"short",year:y?"numeric":undefined,timeZone:"UTC"})}
 function series(){
- var c=MS[chartMode],L=c.len,isM=!!c.m,now=Date.now(),base=(isM?mnum(now):dnum(now))-(L-1),cur=[],prev=[],i;
- for(i=0;i<L;i++){cur.push(0);prev.push(0)}
+ var c=MS[chartMode],L=c.len,isM=!!c.m,now=Date.now(),base=(isM?mnum(now):dnum(now))-(L-1),cur=[],prev=[],curP=[],prevP=[],i;
+ for(i=0;i<L;i++){cur.push(0);prev.push(0);curP.push(0);prevP.push(0)}
  items.forEach(function(it){(it.sales||[]).forEach(function(x){
   var v=x.rev*x.n,k=(isM?mnum(x.at):dnum(x.at))-base;
-  if(k>=0&&k<L)cur[k]+=v;else if(k>=-L&&k<0)prev[k+L]+=v;
+  var pv=x.act*x.n;if(k>=0&&k<L){cur[k]+=v;curP[k]+=pv}else if(k>=-L&&k<0){prev[k+L]+=v;prevP[k+L]+=pv}
  })});
- return {cur:cur,prev:prev,L:L,lab:function(k,y){return isM?fMon(base+k,y):fDay(base+k,y)},plab:function(k,y){return isM?fMon(base+k-L,y):fDay(base+k-L,y)}};
+ return {cur:cur,prev:prev,curP:curP,prevP:prevP,L:L,lab:function(k,y){return isM?fMon(base+k,y):fDay(base+k,y)},plab:function(k,y){return isM?fMon(base+k-L,y):fDay(base+k-L,y)}};
 }
 function niceMax(v){if(v<=0)return 10;var p=Math.pow(10,Math.floor(Math.log10(v))),c=[1,2,4,6,8,10];for(var i=0;i<c.length;i++)if(c[i]*p>=v)return c[i]*p;return 10*p}
 function fy(v){return "$"+(v>=1000?(+(v/1000).toFixed(1))+"K":(+v.toFixed(2)))}
@@ -464,42 +467,37 @@ function curve(p){
 function drawChart(){
  $("chTip").hidden=true;
  var wrap=$("chWrap"),W=wrap.clientWidth||320,H=W>800?290:W<420?190:230,pl=40,pr=10,pt=10,pb=26;
- var d=series(),L=d.L,sum=function(a){return a.reduce(function(x,y){return x+y},0)},tot=sum(d.cur),ptot=sum(d.prev);
+ var d=series(),L=d.L,sum=function(a){return a.reduce(function(x,y){return x+y},0)},tot=sum(d.cur);
  $("chTotal").textContent=m(tot);
- var dl=$("chDelta");
- if(ptot>0){var pc=(tot-ptot)/ptot*100;dl.textContent=(pc>=0?"↗ ":"↘ ")+Math.abs(pc).toFixed(0)+"%";dl.className="delta "+(pc>=0?"up":"down")}
- else if(tot>0){dl.textContent="Yeni";dl.className="delta nw"}else{dl.textContent="";dl.className="delta"}
- var top=niceMax(Math.max.apply(null,d.cur.concat(d.prev))*1.05);
+ var top=niceMax(Math.max.apply(null,d.cur)*1.05);
  var x=function(i){return pl+i*(W-pl-pr)/(L-1)},y=function(v){return pt+(1-v/top)*(H-pt-pb)},y0=y(0);
- var cp=d.cur.map(function(v,i){return [x(i),y(v)]}),pp=d.prev.map(function(v,i){return [x(i),y(v)]});
+ var cp=d.cur.map(function(v,i){return [x(i),y(v)]});
  var g='<defs><linearGradient id="chg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--s1)" stop-opacity=".2"/><stop offset="1" style="stop-color:var(--s1)" stop-opacity="0"/></linearGradient></defs>';
  [0,top/2,top].forEach(function(v){g+='<line class="gl" x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y(v)+'" y2="'+y(v)+'"/><text x="'+(pl-8)+'" y="'+(y(v)+4)+'" text-anchor="end">'+fy(v)+'</text>'});
  var cnt=Math.min(L,Math.max(2,Math.floor(W/78)));
  for(var j=0;j<cnt;j++){var i=Math.round(j*(L-1)/(cnt-1));g+='<text x="'+x(i)+'" y="'+(H-6)+'" text-anchor="'+(j===0?"start":j===cnt-1?"end":"middle")+'">'+d.lab(i)+'</text>'}
  g+='<path d="'+curve(cp)+' L'+x(L-1)+' '+y0+' L'+x(0)+' '+y0+' Z" fill="url(#chg)"/>';
- g+='<path d="'+curve(pp)+'" fill="none" style="stroke:var(--mu)" stroke-width="1.75" stroke-linecap="round" stroke-dasharray="0.1 5"/>';
  g+='<path d="'+curve(cp)+'" fill="none" style="stroke:var(--s1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
- if(!tot&&!ptot)g+='<text x="'+(W/2)+'" y="'+((H-pb+pt)/2-8)+'" text-anchor="middle">Bu dönemde satış yok</text>';
- g+='<line id="chX" class="gl" y1="'+pt+'" y2="'+y0+'" style="display:none"/><circle id="chP" r="3.5" style="display:none;fill:var(--mu);stroke:var(--card);stroke-width:2"/><circle id="chD" r="5" style="display:none;fill:var(--s1);stroke:var(--card);stroke-width:2"/>';
+ if(!tot)g+='<text x="'+(W/2)+'" y="'+((H-pb+pt)/2-8)+'" text-anchor="middle">Bu dönemde satış yok</text>';
+ g+='<line id="chX" class="gl" y1="'+pt+'" y2="'+y0+'" style="display:none"/><circle id="chD" r="5" style="display:none;fill:var(--s1);stroke:var(--card);stroke-width:2"/>';
  var sv=$("chSvg");sv.setAttribute("viewBox","0 0 "+W+" "+H);sv.setAttribute("height",H);sv.innerHTML=g;
  CS={d:d,W:W,H:H,pl:pl,pr:pr,x:x,y:y};
  $("lgCur").textContent=d.lab(0)+" – "+d.lab(L-1,true);
- $("lgPrev").textContent=d.plab(0)+" – "+d.plab(L-1,true);
- var tb='<table><thead><tr><th>Dönem</th><th>Bu dönem</th><th>Önceki dönem</th></tr></thead><tbody>';
- for(var r=0;r<L;r++)tb+='<tr><td>'+d.lab(r,true)+'</td><td>'+m(d.cur[r])+'</td><td>'+m(d.prev[r])+'</td></tr>';
+ var tb='<table><thead><tr><th>Dönem</th><th>Gelir</th><th>Kâr</th></tr></thead><tbody>';
+ for(var r=0;r<L;r++)tb+='<tr><td>'+d.lab(r,true)+'</td><td>'+m(d.cur[r])+'</td><td>'+m(d.curP[r])+'</td></tr>';
  $("chTable").innerHTML=tb+'</tbody></table>';
 }
+function pc(x){return x>0?"pos":x<0?"neg":""}
 function chHide(){["chX","chP","chD"].forEach(function(i){var e=$(i);if(e)e.style.display="none"});$("chTip").hidden=true}
 function chMove(e){
  if(!CS)return;
  var r=$("chSvg").getBoundingClientRect(),L=CS.d.L,sx=CS.W/r.width,px=(e.clientX-r.left)*sx;
  var i=Math.max(0,Math.min(L-1,Math.round((px-CS.pl)/((CS.W-CS.pl-CS.pr)/(L-1)))));
- var cx=CS.x(i),X=$("chX"),D=$("chD"),P=$("chP");
+ var cx=CS.x(i),X=$("chX"),D=$("chD");
  X.setAttribute("x1",cx);X.setAttribute("x2",cx);X.style.display="";
  D.setAttribute("cx",cx);D.setAttribute("cy",CS.y(CS.d.cur[i]));D.style.display="";
- P.setAttribute("cx",cx);P.setAttribute("cy",CS.y(CS.d.prev[i]));P.style.display="";
  var t=$("chTip");
- t.innerHTML='<div class="th">'+CS.d.lab(i,true)+'</div><div><i class="k"></i><b>'+m(CS.d.cur[i])+'</b></div><div><i class="k d"></i><b>'+m(CS.d.prev[i])+'</b> <span style="color:var(--mu)">· '+CS.d.plab(i,true)+'</span></div>';
+ t.innerHTML='<div class="th">'+CS.d.lab(i,true)+'</div><div><i class="k"></i><b>'+m(CS.d.cur[i])+'</b> <span style="color:var(--mu)">· kâr</span> <b class="'+pc(CS.d.curP[i])+'">'+m(CS.d.curP[i])+'</b></div>';
  t.hidden=false;
  var tw=t.offsetWidth,left=cx/sx+14;if(left+tw>r.width)left=cx/sx-tw-14;t.style.left=Math.max(0,left)+"px";
 }
@@ -512,10 +510,14 @@ $("chSeg").addEventListener("click",function(e){
  chartMode=b.dataset.m;[].forEach.call(this.children,function(c){c.classList.toggle("on",c===b)});drawChart();
 });
 var rz=0;window.addEventListener("resize",function(){cancelAnimationFrame(rz);rz=requestAnimationFrame(drawChart)});
+$("tamt").addEventListener("input",function(){try{localStorage.setItem("ebayTax",this.value===""?"0":this.value)}catch(e){}});
 function resetEntry(){
- ["sold","shipC","tamt","promo","char","tm","pname"].forEach(function(i){$(i).value=""});
+ ["sold","shipC","promo","char","tm","pname"].forEach(function(i){$(i).value=""});
+ var tx=null;try{tx=localStorage.getItem("ebayTax")}catch(e){}
+ $("tamt").value=tx===null?"10":tx;
  calc();
 }
+if("serviceWorker" in navigator&&/^https?:$/.test(location.protocol)&&location.hostname!=="localhost"||("serviceWorker" in navigator&&location.hostname==="localhost"&&location.search.indexOf("sw")>-1)){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
 window.addEventListener("pageshow",function(e){if(e.persisted)resetEntry()});
 resetEntry();renderList();
 </script>
