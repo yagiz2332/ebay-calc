@@ -79,6 +79,9 @@ input:focus,select:focus{outline:none;border-color:var(--tx);background:var(--ca
 .r:last-child{border:0;padding-bottom:0}
 .r:first-child{padding-top:0}
 .tg{align-items:end}
+.gm{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd);font-size:13px;color:var(--mu)}
+.gm b{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.gm .gd{font-size:12.5px}
 .spw{display:flex;align-items:center;gap:12px;min-height:48px}
 .spw button{width:auto;padding:9px 16px;font-size:13px;min-height:0}
 .sp{font-size:30px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
@@ -229,6 +232,7 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
  <div><label>Hedef marj (%)</label><input autocomplete="off" id="tm" data-skip="1" type="number" step="0.1" placeholder="örn. 20"></div>
  <div><label>Satmam gereken fiyat</label><div class="spw"><div class="sp" id="sp">–</div><button id="ap" type="button">Uygula</button></div></div>
 </div>
+<div class="gm" id="gm"></div>
 <div class="hint" id="spHint" style="margin-top:12px"></div>
 </div>
 
@@ -368,6 +372,14 @@ function solve(){
  $("sp").textContent=m(p);
  $("spHint").textContent="Bu fiyatta marj ≈ %"+((prof(p)/(p+sc))*100).toFixed(1)+", net kâr "+m(prof(p))+" (satış + kargo geliri üzerinden)";
 }
+var lastC={profit:0,revenue:0};
+function gmUp(){
+ var el=$("gm");if(!el)return;
+ if(!(lastC.revenue>0)){el.innerHTML="Güncel marj <b>–</b>";return}
+ var mg=lastC.profit/lastC.revenue*100,t=$("tm").value===""?null:parseFloat($("tm").value),cl=mg<0?"neg":"",dl="";
+ if(t!==null&&!isNaN(t)){var df=mg-t;cl=df>=0?"pos":"neg";dl='<span class="gd">hedef %'+t+" · "+(df>=0?"+":"")+df.toFixed(1)+" puan "+(df>=0?"üstünde":"altında")+"</span>"}
+ el.innerHTML='Güncel marj <b class="'+cl+'">%'+mg.toFixed(1)+"</b>"+'<span>net kâr <b style="font-size:15px" class="'+(lastC.profit<3?"neg":lastC.profit<=6?"pos":"mid")+'">'+m(lastC.profit)+"</b></span>"+dl;
+}
 function calc(){
  var sold=n("sold"),sc=n("shipC"),raw=n("raw"),mult=n("mult")||1,sh=n("shipCost");
  var cost=raw*mult;
@@ -396,14 +408,15 @@ function calc(){
  $("rows").innerHTML=rows.map(function(r){return '<div class="r"><span>'+r[0]+'</span><b>'+r[1]+'</b></div>'}).join("");
  $("rows").innerHTML+='<div class="r tot"><span>Toplam maliyet<small>Bu satışta giden toplam para</small></span><b>'+m(-(revenue-profit))+'</b></div>'
   +'<div class="r tot2"><span>Satış fiyatı</span><b>'+m(revenue)+'</b></div>'
-  +'<div class="r tot2"><span>Net kâr</span><b class="'+(profit<3?"neg":profit<=6?"mid":"pos")+'">'+m(profit)+'</b></div>';
- var p=$("profit");var tot=profit;if(revenue<=0){p.textContent="$0.00";p.className="big"}else{p.textContent=m(tot);p.className="big "+(tot<3?"neg":tot<=6?"mid":"pos")}
+  +'<div class="r tot2"><span>Net kâr</span><b class="'+(profit<3?"neg":profit<=6?"pos":"mid")+'">'+m(profit)+'</b></div>';
+ var p=$("profit");var tot=profit;if(revenue<=0){p.textContent="$0.00";p.className="big"}else{p.textContent=m(tot);p.className="big "+(tot<3?"neg":tot<=6?"pos":"mid")}
  $("margin").textContent=revenue>0?(profit/revenue*100).toFixed(1)+"%":"–";
+ lastC={profit:profit,revenue:revenue};gmUp();
  $("roi").textContent=revenue>0&&(cost+sh)>0?(profit/(cost+sh)*100).toFixed(1)+"%":"–";
  solve();
 }
 document.querySelectorAll("input:not([data-skip]),select:not([data-skip])").forEach(function(e){e.addEventListener("input",calc);e.addEventListener("change",calc)});
-$("tm").addEventListener("input",solve);
+$("tm").addEventListener("input",solve);$("tm").addEventListener("input",gmUp);
 $("ap").addEventListener("click",function(){if(suggested!==null){$("sold").value=suggested.toFixed(2);calc()}});
 
 /* ---- Ürün listesi ---- */
