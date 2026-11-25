@@ -164,9 +164,16 @@ button.ghost{background:var(--field);color:var(--tx)}
 .tb td{padding:5px 0;border-top:1px solid var(--bd);text-align:right}
 .tb th:first-child,.tb td:first-child{text-align:left}
 .pe{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}
+@media (min-width:560px){.pe{grid-template-columns:repeat(3,1fr)}}
 .pe label{font-size:12px}
-.pe-out{margin-top:8px;font-size:13px;color:var(--mu)}
-.pe-out b{color:var(--tx)}
+.pe-res{grid-column:1/-1;display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:14px;background:color-mix(in srgb,var(--s1) 9%,transparent);border:1px solid var(--bd)}
+@media (min-width:560px){.pe-res{grid-column:auto}}
+.pe-k{font-size:12px;color:var(--mu)}
+.pe-v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.pe-v .tlz{font-size:12px;font-weight:500}
+.pe-s{font-size:11.5px;color:var(--mu);opacity:.85}
+.pe-b{display:flex;gap:8px;margin-top:8px}
+.pe-b button{width:auto;padding:7px 14px;font-size:13px;min-height:0}
 .dr[hidden]{display:none}
 #chRange input{flex:1 1 120px;min-width:0}
 .seg button{white-space:nowrap}
@@ -517,7 +524,7 @@ function renderList(){
   else h+='<button class="x" data-act="del" data-id="'+i.id+'">Sil</button>';
   h+='</div>';
   if(editPrice===i.id){var sn2=i.snap||{};function pf(f,l,v){return '<div><label>'+l+'</label><input class="pin" data-f="'+f+'" type="number" step="0.01" inputmode="decimal" autocomplete="off" data-skip="1" value="'+esc(v)+'"></div>'}
-   h+='<div class="pe" data-id="'+i.id+'">'+pf("listed","Liste fiyatı ($)",i.listed)+pf("raw","Item cost ($)",sn2.raw||"")+pf("mult","Çarpan",sn2.mult||"1.15")+pf("shipCost","Shipping cost ($)",sn2.shipCost||"")+'</div><div class="pe-out" id="peOut'+i.id+'"></div><div class="dr"><button data-act="pok" data-id="'+i.id+'">Kaydet</button><button class="ghost" data-act="pno" data-id="'+i.id+'">İptal</button></div>'}
+   h+='<div class="pe" data-id="'+i.id+'">'+pf("listed","Liste fiyatı ($)",i.listed)+pf("raw","Item cost ($)",sn2.raw||"")+pf("mult","Çarpan",sn2.mult||"1.15")+pf("shipCost","Shipping cost ($)",sn2.shipCost||"")+pf("promo","Promoted ad rate (%)",sn2.promo||"")+'<div class="pe-res"><div class="pe-k">Yeni net kâr</div><div class="pe-v" id="peV'+i.id+'"></div><div class="pe-s" id="peS'+i.id+'"></div><div class="pe-b"><button data-act="pok" data-id="'+i.id+'">Kaydet</button><button class="ghost" data-act="pno" data-id="'+i.id+'">İptal</button></div></div></div>'}
   if(editLink===i.id)h+='<div class="dr"><input type="text" inputmode="url" autocapitalize="off" spellcheck="false" autocomplete="off" data-skip="1" id="lk'+i.id+'" placeholder="Tedarikçi linki" maxlength="500" value="'+esc(i.link||"")+'"><button data-act="lkok" data-id="'+i.id+'">Kaydet</button><button class="ghost" data-act="lkno" data-id="'+i.id+'">İptal</button></div>';
   if(openDate===i.id)h+='<div class="dr"><input type="datetime-local" autocomplete="off" data-skip="1" id="sd'+i.id+'" max="'+nowLocal()+'" value="'+nowLocal()+'"><button data-act="dok" data-id="'+i.id+'">Ekle</button><button class="ghost" data-act="dno" data-id="'+i.id+'">İptal</button></div>';
   if(isS){var ss=i.sales.slice().sort(function(a,b){return a.at-b.at}),tn=ss.length;h+='<div class="log">'+ss.map(function(x,j){return '<div><span>#'+(j+1)+' · '+dts(x.at)+'</span><span>'+x.n+' adet · '+m(x.price)+' · kâr <b class="'+cls(x.act*x.n)+'">'+m(x.act*x.n)+'</b> <button class="lx" title="Bu satışı sil" data-act="rm" data-id="'+i.id+'" data-sid="'+x.sid+'">✕</button></span></div>'}).reverse().join("")+'</div>'}
@@ -563,11 +570,13 @@ $("list").addEventListener("click",function(e){
 });
 function peRead(id){var box=document.querySelector('.pe[data-id="'+id+'"]'),it=items.filter(function(i){return i.id===id})[0];if(!box||!it)return null;
  var v={};[].forEach.call(box.querySelectorAll(".pin"),function(e){v[e.dataset.f]=e.value});
- var snap={};for(var k in (it.snap||{}))snap[k]=it.snap[k];snap.raw=v.raw===""?"":String(v.raw);snap.mult=v.mult===""?"1":String(v.mult);snap.shipCost=v.shipCost===""?"0":String(v.shipCost);
+ var snap={};for(var k in (it.snap||{}))snap[k]=it.snap[k];snap.raw=v.raw===""?"":String(v.raw);snap.mult=v.mult===""?"1":String(v.mult);snap.shipCost=v.shipCost===""?"0":String(v.shipCost);snap.promo=v.promo===""?"":String(v.promo);
  return {listed:parseFloat(v.listed)||0,snap:snap}}
-function peCalc(id){var o=$("peOut"+id),pv=peRead(id),it=items.filter(function(i){return i.id===id})[0];if(!o||!pv||!it)return;
- if(!(pv.listed>0)){o.textContent="Liste fiyatını gir.";return}
- var np=evalSnap(pv.snap,pv.listed).profit;o.innerHTML='Yeni net kâr: <b class="'+cls(np)+'">'+m(np)+'</b> (şu an '+m(it.est)+'). Önceki satışların kârı değişmez, yeni satışlar bu fiyatla hesaplanır.'}
+function peCalc(id){var o=$("peV"+id),o2=$("peS"+id),pv=peRead(id),it=items.filter(function(i){return i.id===id})[0];if(!o||!pv||!it)return;
+ if(!(pv.listed>0)){o.textContent="–";o2.textContent="Liste fiyatını gir.";return}
+ var np=evalSnap(pv.snap,pv.listed).profit,c3=np<3?"neg":np<=6?"pos":"mid";
+ o.innerHTML='<b class="'+c3+'">'+m(np)+'</b>'+(tl(np)?' <small class="tlz">'+tl(np)+'</small>':"");
+ o2.textContent="şu an "+m(it.est)+" · önceki satışlar değişmez"}
 $("list").addEventListener("input",function(e){if(e.target.classList&&e.target.classList.contains("pin")){var bx=e.target.closest(".pe");if(bx)peCalc(+bx.dataset.id)}});
 $("q").addEventListener("input",renderList);$("lf").addEventListener("change",renderList);$("ls").addEventListener("change",renderList);
 /* ---- Excel (.xlsx) dışa aktarma ---- */
