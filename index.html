@@ -206,6 +206,7 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
  <div><label>Item cost – ürün fiyatı ($)</label><input autocomplete="off" id="raw" type="number" step="0.01" placeholder="0"><div class="hint" id="adjHint"></div></div>
  <div><label>Item cost çarpanı</label><input autocomplete="off" id="mult" type="number" step="0.01" value="1.15"><div class="hint">Otomatik çarpılır (ürün × çarpan)</div></div>
  <div><label>Shipping cost ($)</label><input autocomplete="off" id="shipCost" type="number" step="0.01" value="0.60"></div>
+ <div style="grid-column:1/-1"><label>Tedarikçi linki (opsiyonel)</label><input autocomplete="off" id="plink" data-skip="1" type="text" inputmode="url" autocapitalize="off" spellcheck="false" placeholder="Ürünü aldığın sayfanın linki" maxlength="500"></div>
 </div>
 </div>
 
@@ -263,7 +264,6 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
  <div class="add">
   <input autocomplete="off" id="pname" data-skip="1" type="text" placeholder="Ürün adı" maxlength="80">
   <button id="add">Listeye ekle</button>
-  <input autocomplete="off" id="plink" data-skip="1" type="text" inputmode="url" placeholder="Tedarikçi linki (opsiyonel)" maxlength="500" style="flex:1 1 100%;order:3">
  </div>
 </div>
 </div>
@@ -412,7 +412,7 @@ function su(i){return (i.sales||[]).reduce(function(a,s){return a+s.n},0)}
 function sRev(i){return (i.sales||[]).reduce(function(a,s){return a+s.rev*s.n},0)}
 function sPro(i){return (i.sales||[]).reduce(function(a,s){return a+s.act*s.n},0)}
 function nid(){return Date.now()*1000+Math.floor(Math.random()*1000)}
-var openDate=null;
+var openDate=null,editLink=null;
 items.forEach(function(i){
  if(!i.sales)i.sales=i.status==="sold"?[{n:i.qty||1,price:i.soldPrice,act:i.act,rev:i.rev,at:i.soldAt}]:[];
  i.sales.forEach(function(x){if(!x.sid)x.sid=nid()});
@@ -444,6 +444,7 @@ function renderList(){
   if(pendingDel===i.id)h+='<span class="x2"><button class="danger" data-act="delok" data-id="'+i.id+'">Evet, sil</button><button class="ghost" data-act="delno" data-id="'+i.id+'">Vazgeç</button></span>';
   else h+='<button class="x" data-act="del" data-id="'+i.id+'">Sil</button>';
   h+='</div>';
+  if(editLink===i.id)h+='<div class="dr"><input type="text" inputmode="url" autocapitalize="off" spellcheck="false" autocomplete="off" data-skip="1" id="lk'+i.id+'" placeholder="Tedarikçi linki" maxlength="500" value="'+esc(i.link||"")+'"><button data-act="lkok" data-id="'+i.id+'">Kaydet</button><button class="ghost" data-act="lkno" data-id="'+i.id+'">İptal</button></div>';
   if(openDate===i.id)h+='<div class="dr"><input type="datetime-local" autocomplete="off" data-skip="1" id="sd'+i.id+'" max="'+nowLocal()+'" value="'+nowLocal()+'"><button data-act="dok" data-id="'+i.id+'">Ekle</button><button class="ghost" data-act="dno" data-id="'+i.id+'">İptal</button></div>';
   if(isS){var ss=i.sales.slice().sort(function(a,b){return a.at-b.at}),tn=ss.length;h+='<div class="log">'+ss.map(function(x,j){return '<div><span>#'+(j+1)+' · '+dts(x.at)+'</span><span>'+x.n+' adet · '+m(x.price)+' · kâr <b class="'+cls(x.act*x.n)+'">'+m(x.act*x.n)+'</b> <button class="lx" title="Bu satışı sil" data-act="rm" data-id="'+i.id+'" data-sid="'+x.sid+'">✕</button></span></div>'}).reverse().join("")+'</div>'}
   return h+'</div>';
@@ -468,7 +469,9 @@ $("list").addEventListener("click",function(e){
  else if(b.dataset.act==="sell"){
   var r=evalSnap(it.snap,it.listed);
   var s1={sid:nid(),n:1,price:it.listed,act:r.profit,rev:r.revenue,at:Date.now()};it.sales.push(s1);cloud.sale(it,s1);
- }else if(b.dataset.act==="link"){var nl=prompt("Tedarikçi linki (boş bırakırsan silinir):",it.link||"");if(nl===null)return;it.link=normLink(nl);cloud.upd(it)}
+ }else if(b.dataset.act==="link"){editLink=id;renderList();var le=$("lk"+id);if(le)le.focus();return}
+ else if(b.dataset.act==="lkno"){editLink=null;renderList();return}
+ else if(b.dataset.act==="lkok"){it.link=normLink($("lk"+id).value);editLink=null;cloud.upd(it)}
  else if(b.dataset.act==="dopen"){openDate=id;renderList();return}
  else if(b.dataset.act==="dno"){openDate=null;renderList();return}
  else if(b.dataset.act==="dok"){
