@@ -1,5 +1,5 @@
 /* eBay Fee Calculator - service worker: çevrimdışı çalışma */
-var V = "v2";
+var V = "v3";
 var SHELL = "shell-" + V, RUNTIME = "runtime-" + V;
 var FILES = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"];
 
@@ -23,7 +23,7 @@ self.addEventListener("fetch", function (e) {
   /* Sayfa: önce ağ (güncellemeler hemen gelsin), olmazsa önbellek */
   if (req.mode === "navigate" || (url.origin === location.origin && (url.pathname.endsWith("/") || url.pathname.endsWith("index.html")))) {
     e.respondWith(
-      fetch(req).then(function (res) {
+      fetch(req.url, { cache: "no-cache", credentials: "same-origin" }).then(function (res) {
         var copy = res.clone();
         caches.open(SHELL).then(function (c) { c.put("./index.html", copy); });
         return res;

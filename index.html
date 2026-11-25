@@ -68,6 +68,8 @@ input:focus,select:focus{outline:none;border-color:var(--tx);background:var(--ca
 .r:last-child{border:0;padding-bottom:0}
 .r:first-child{padding-top:0}
 .tg{align-items:end}
+.spw{display:flex;align-items:center;gap:12px;min-height:48px}
+.spw button{width:auto;padding:9px 16px;font-size:13px;min-height:0}
 .sp{font-size:30px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 button{padding:12px 18px;font:inherit;font-weight:600;font-size:14px;border:0;border-radius:12px;background:var(--ac);color:var(--acx);cursor:pointer;width:100%;transition:opacity .15s,transform .1s}
 button:hover{opacity:.88}button:active{transform:scale(.98)}
@@ -77,7 +79,7 @@ details summary::-webkit-details-marker{display:none}
 details summary::after{content:"+";font-size:20px;font-weight:400;color:var(--mu);line-height:1}
 details[open] summary::after{content:"–"}
 details .in{padding:0 20px 20px}
-.add{display:flex;gap:10px;flex:1 1 100%;padding-top:18px;border-top:1px solid var(--bd)}
+.add{display:flex;flex-wrap:wrap;gap:10px;flex:1 1 100%;padding-top:18px;border-top:1px solid var(--bd)}
 .add input{flex:1;min-width:0}
 .add button{width:auto;white-space:nowrap}
 button.ghost{background:var(--field);color:var(--tx)}
@@ -203,12 +205,13 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
 <div class="chd"><h2>Ürün</h2><button id="reset" class="ghost" type="button">Sıfırla</button></div>
 <div class="g">
  <div><label>Sold price ($)</label><input autocomplete="off" id="sold" type="number" step="0.01" placeholder="0"></div>
- <div><label>Shipping charged ($)</label><input autocomplete="off" id="shipC" type="number" step="0.01" placeholder="0"></div>
  <div><label>Item cost – ürün fiyatı ($)</label><input autocomplete="off" id="raw" type="number" step="0.01" placeholder="0"><div class="hint" id="adjHint"></div></div>
  <div><label>Item cost çarpanı</label><input autocomplete="off" id="mult" type="number" step="0.01" value="1.15"><div class="hint">Otomatik çarpılır (ürün × çarpan)</div></div>
  <div><label>Shipping cost ($)</label><input autocomplete="off" id="shipCost" type="number" step="0.01" value="0.60"></div>
- <div style="grid-column:1/-1"><label>Tedarikçi linki (opsiyonel)</label><input autocomplete="off" id="plink" data-skip="1" type="text" inputmode="url" autocapitalize="off" spellcheck="false" placeholder="Ürünü aldığın sayfanın linki" maxlength="500"></div>
+ <div><label>Hedef marj (%)</label><input autocomplete="off" id="tm" data-skip="1" type="number" step="0.1" placeholder="örn. 20"></div>
+ <div><label>Satmam gereken fiyat</label><div class="spw"><div class="sp" id="sp">–</div><button id="ap" type="button">Uygula</button></div></div>
 </div>
+<div class="hint" id="spHint" style="margin-top:12px"></div>
 </div>
 
 <details style="order:3" class="card" data-k="store">
@@ -221,6 +224,7 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
  <div><label>Item category</label><select autocomplete="off" id="cat"></select></div>
  <div><label>Promoted ad rate (%)</label><input autocomplete="off" id="promo" type="number" step="0.1" placeholder="0"></div>
  <div><label>Donated to charity (%)</label><input autocomplete="off" id="char" type="number" step="0.1" placeholder="0"></div>
+ <div><label>Shipping charged ($)</label><input autocomplete="off" id="shipC" type="number" step="0.01" placeholder="0"></div>
 </div>
 </div>
 </details>
@@ -265,24 +269,13 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
  <div class="add">
   <input autocomplete="off" id="pname" data-skip="1" type="text" placeholder="Ürün adı" maxlength="80">
   <button id="add">Listeye ekle</button>
+  <input autocomplete="off" id="plink" data-skip="1" type="text" inputmode="url" autocapitalize="off" spellcheck="false" placeholder="Tedarikçi linki (opsiyonel)" maxlength="500" style="flex:1 1 100%;order:3">
  </div>
 </div>
 </div>
 
-<details style="order:5" class="card" data-k="goal">
-<summary>Hedef marj</summary>
-<div class="in">
-<div class="g tg">
- <div><label>Hedef marj (%)</label><input autocomplete="off" id="tm" data-skip="1" type="number" step="0.1" placeholder="örn. 20"></div>
- <div><label>Satmam gereken fiyat</label><div class="sp" id="sp">–</div></div>
- <div><button id="ap">Sold price'a uygula</button></div>
-</div>
-<div class="hint" id="spHint" style="margin-top:12px"></div>
-</div>
-</details>
-
 <details style="order:6" class="card">
-<summary>Detay (1 sipariş başına)</summary>
+<summary>Detay</summary>
 <div class="in"><div id="rows"></div></div>
 </details>
 </div>
@@ -586,7 +579,7 @@ function curve(p){
 }
 function drawChart(){
  $("chTip").hidden=true;
- var wrap=$("chWrap"),W=wrap.clientWidth||320,H=W>800?290:W<420?190:230,pl=40,pr=36,pt=10,pb=26;
+ var wrap=$("chWrap"),W=wrap.clientWidth||320,H=W<500?Math.round(W*.72):Math.max(250,Math.min(330,Math.round(W*.42))),sm=W<500,pl=sm?34:40,pr=sm?28:36,pt=10,pb=26;
  var d=series(),L=d.L,sum=function(a){return a.reduce(function(x,y){return x+y},0)},tot=sum(d.cur);
  $("chTotal").textContent=m(tot);
  var top=niceMax(Math.max.apply(null,d.cur)*1.05);
@@ -646,6 +639,7 @@ function shBtnUp(){$("shBtn").hidden=!/^https:\/\/docs\.google\.com\//.test(shL)
 window.setSheetLink=function(u){if(u===shL)return;shL=u;try{localStorage.setItem("ebaySheetLink",u)}catch(e){}shBtnUp()};
 $("shBtn").addEventListener("click",function(){if(shL)window.open(shL,"_blank","noopener")});shBtnUp();
 var rz=0;window.addEventListener("resize",function(){cancelAnimationFrame(rz);rz=requestAnimationFrame(drawChart)});
+if(window.ResizeObserver){var chLW=0;new ResizeObserver(function(){var w=$("chWrap").clientWidth;if(w&&w!==chLW){chLW=w;cancelAnimationFrame(rz);rz=requestAnimationFrame(drawChart)}}).observe($("chWrap"))}
 $("tamt").addEventListener("input",function(){var tv=this.value===""?"0":this.value;try{localStorage.setItem("ebayTax",tv)}catch(e){}cloud.tax(tv)});
 document.querySelectorAll("details[data-k]").forEach(function(d){
  try{if(localStorage.getItem("ebayOpen_"+d.dataset.k)==="1")d.open=true}catch(e){}
