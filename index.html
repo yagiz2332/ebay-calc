@@ -550,14 +550,14 @@ $("list").addEventListener("click",function(e){
  else if(b.dataset.act==="sell"){
   var r=evalSnap(it.snap,it.listed);
   var s1={sid:nid(),n:1,price:it.listed,act:r.profit,rev:r.revenue,at:Date.now()};it.sales.push(s1);cloud.sale(it,s1);
- }else if(b.dataset.act==="price"){editPrice=id;renderList();peCalc(id);return}
+ }else if(b.dataset.act==="price"){editPrice=editPrice===id?null:id;renderList();if(editPrice)peCalc(id);return}
  else if(b.dataset.act==="pno"){editPrice=null;renderList();return}
  else if(b.dataset.act==="pok"){var pv=peRead(id);if(!pv||!(pv.listed>0)){var pe0=document.querySelector('.pe[data-id="'+id+'"] [data-f=listed]');if(pe0)pe0.focus();return}
   it.snap=pv.snap;it.listed=pv.listed;it.est=evalSnap(pv.snap,pv.listed).profit;editPrice=null;cloud.upd(it)}
- else if(b.dataset.act==="link"){editLink=id;renderList();var le=$("lk"+id);if(le)le.focus();return}
+ else if(b.dataset.act==="link"){editLink=editLink===id?null:id;renderList();var le=editLink?$("lk"+id):null;if(le)le.focus();return}
  else if(b.dataset.act==="lkno"){editLink=null;renderList();return}
  else if(b.dataset.act==="lkok"){it.link=normLink($("lk"+id).value);editLink=null;cloud.upd(it)}
- else if(b.dataset.act==="dopen"){openDate=id;renderList();return}
+ else if(b.dataset.act==="dopen"){openDate=openDate===id?null:id;renderList();return}
  else if(b.dataset.act==="dno"){openDate=null;renderList();return}
  else if(b.dataset.act==="dok"){
   var at=new Date($("sd"+id).value).getTime();
