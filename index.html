@@ -592,16 +592,17 @@ function drawChart(){
  var top=niceMax(Math.max.apply(null,d.cur)*1.05);
  var x=function(i){return pl+i*(W-pl-pr)/(L-1)},y=function(v){return pt+(1-v/top)*(H-pt-pb)},y0=y(0);
  var cp=d.cur.map(function(v,i){return [x(i),y(v)]});
- var lm=Math.max.apply(null,d.lst),topL=lm<=4?4:niceMax(lm*1.05),y2=function(v){return pt+(1-v/topL)*(H-pt-pb)},lp=d.lst.map(function(v,i){return [x(i),y2(v)]});
+ var lm=Math.max.apply(null,d.lst),stp=lm<=5?1:lm<=11?2:lm<=27?5:niceMax(lm/5),topL=Math.max(4,Math.ceil((lm+.5)/stp)*stp),y2=function(v){return pt+(1-v/topL)*(H-pt-pb)},lp=d.lst.map(function(v,i){return [x(i),y2(v)]});
  var g='<defs><linearGradient id="chg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--s1)" stop-opacity=".2"/><stop offset="1" style="stop-color:var(--s1)" stop-opacity="0"/></linearGradient><filter id="chGlow" filterUnits="userSpaceOnUse" x="0" y="0" width="'+W+'" height="'+H+'"><feGaussianBlur stdDeviation="4"/></filter></defs>';
  [0,top/2,top].forEach(function(v){g+='<line class="gl" x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y(v)+'" y2="'+y(v)+'"/><text x="'+(pl-8)+'" y="'+(y(v)+4)+'" text-anchor="end">'+fy(v)+'</text>'});
- [0,topL/2,topL].forEach(function(v){g+='<text x="'+(W-pr+8)+'" y="'+(y2(v)+4)+'" text-anchor="start" style="fill:var(--s2)">'+(+v.toFixed(1))+'</text>'});
+ for(var tv=0;tv<=topL+1e-9;tv+=stp)g+='<text x="'+(W-pr+8)+'" y="'+(y2(tv)+4)+'" text-anchor="start" style="fill:var(--s2)">'+tv+'</text><line x1="'+(W-pr+1)+'" x2="'+(W-pr+5)+'" y1="'+y2(tv)+'" y2="'+y2(tv)+'" style="stroke:var(--s2)" opacity=".6"/>';
  var cnt=Math.min(L,Math.max(2,Math.floor(W/78)));
  for(var j=0;j<cnt;j++){var i=Math.round(j*(L-1)/(cnt-1));g+='<text x="'+x(i)+'" y="'+(H-6)+'" text-anchor="'+(j===0?"start":j===cnt-1?"end":"middle")+'">'+d.lab(i)+'</text>'}
+ g+='<defs><filter id="chSoft" filterUnits="userSpaceOnUse" x="0" y="0" width="'+W+'" height="'+H+'"><feGaussianBlur stdDeviation="3"/></filter><mask id="chM" maskUnits="userSpaceOnUse" x="0" y="0" width="'+W+'" height="'+H+'"><rect x="0" y="0" width="'+W+'" height="'+H+'" fill="#fff"/><path d="'+curve(cp)+'" fill="none" stroke="#000" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" filter="url(#chSoft)"/></mask></defs>';
+ g+='<g mask="url(#chM)"><path d="'+curve(lp)+'" fill="none" style="stroke:var(--s2)" stroke-width="8" stroke-linecap="round" stroke-dasharray="0.1 7" opacity=".6" filter="url(#chGlow)"/><path d="'+curve(lp)+'" fill="none" style="stroke:var(--s2)" stroke-width="3" stroke-linecap="round" stroke-dasharray="0.1 7"/></g>';
  g+='<path d="'+curve(cp)+' L'+x(L-1)+' '+y0+' L'+x(0)+' '+y0+' Z" fill="url(#chg)"/>';
  g+='<path d="'+curve(cp)+'" fill="none" style="stroke:var(--s1)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity=".55" filter="url(#chGlow)"/>';
  g+='<path d="'+curve(cp)+'" fill="none" style="stroke:var(--s1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
- g+='<path d="'+curve(lp)+'" fill="none" style="stroke:var(--s2)" stroke-width="3" stroke-linecap="round" stroke-dasharray="0.1 6"/>';
  if(!tot)g+='<text x="'+(W/2)+'" y="'+((H-pb+pt)/2-8)+'" text-anchor="middle">Bu dönemde satış yok</text>';
  g+='<line id="chX" class="gl" y1="'+pt+'" y2="'+y0+'" style="display:none"/><circle id="chD" r="5" style="display:none;fill:var(--s1);stroke:var(--card);stroke-width:2"/><circle id="chD2" r="5" style="display:none;fill:var(--s2);stroke:var(--card);stroke-width:2"/>';
  var sv=$("chSvg");sv.setAttribute("viewBox","0 0 "+W+" "+H);sv.setAttribute("height",H);sv.innerHTML=g;
