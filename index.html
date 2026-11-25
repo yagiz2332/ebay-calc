@@ -85,8 +85,8 @@ button.ghost{background:var(--field);color:var(--tx)}
 .stat{background:var(--field);border-radius:12px;padding:12px 14px}
 .stat .hint{margin:0 0 2px}
 .stat b{font-size:18px;font-weight:650;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
-.tools{display:flex;gap:10px;margin-bottom:6px}
-.tools select{flex:1;padding:9px 32px 9px 12px;font-size:13px}
+.tools{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:6px}
+.tools select{flex:1 1 110px;padding:9px 32px 9px 12px;font-size:13px}
 .it{padding:14px 0;border-bottom:1px solid var(--bd)}
 .it:last-child{border:0;padding-bottom:0}
 .it-h{display:flex;justify-content:space-between;gap:10px;align-items:center}
@@ -121,7 +121,7 @@ button.ghost{background:var(--field);color:var(--tx)}
 .k{display:inline-block;width:14px;height:0;border-top:2px solid var(--s1);vertical-align:middle;margin-right:6px}
 .k.d{border-top:2px dotted var(--mu)}
 .seg{display:flex;gap:4px;background:var(--field);border-radius:12px;padding:4px;margin-top:14px}
-.seg button{flex:1;width:auto;background:transparent;color:var(--mu);padding:8px 6px;font-size:13px;border-radius:9px}
+.seg button{flex:1;width:auto;background:transparent;color:var(--mu);padding:8px 2px;font-size:13px;border-radius:9px}
 .seg button.on{background:var(--card);color:var(--tx);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .seg button:hover{opacity:1;color:var(--tx)}
 .legend{display:flex;gap:6px 18px;flex-wrap:wrap;justify-content:center;margin-top:12px;font-size:12px;color:var(--mu)}
@@ -132,6 +132,14 @@ button.ghost{background:var(--field);color:var(--tx)}
 .tb th{font-weight:500;color:var(--mu);text-align:right;padding:4px 0}
 .tb td{padding:5px 0;border-top:1px solid var(--bd);text-align:right}
 .tb th:first-child,.tb td:first-child{text-align:left}
+.dr[hidden]{display:none}
+#chRange input{flex:1 1 120px;min-width:0}
+.seg button{white-space:nowrap}
+.sq{margin-bottom:10px}
+.it-h .rt{display:flex;gap:8px;align-items:center}
+.it-h .plus{width:38px;height:38px;min-height:38px;padding:0;border-radius:50%;font-size:22px;line-height:1;flex:none}
+.it-n a{color:var(--s1);text-decoration:none;font-weight:600}
+#shBtn[hidden]{display:none}
 .dr{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
 .dr input{width:auto;flex:1 1 190px;padding:8px 10px}
 .dr button{width:auto;padding:8px 14px;font-size:13px}
@@ -195,7 +203,7 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
 <div class="g">
  <div><label>Sold price ($)</label><input autocomplete="off" id="sold" type="number" step="0.01" placeholder="0"></div>
  <div><label>Shipping charged ($)</label><input autocomplete="off" id="shipC" type="number" step="0.01" placeholder="0"></div>
- <div><label>Item cost – ürün fiyatı ($)</label><input autocomplete="off" id="raw" type="number" step="0.01" value="5" placeholder="0"><div class="hint" id="adjHint"></div></div>
+ <div><label>Item cost – ürün fiyatı ($)</label><input autocomplete="off" id="raw" type="number" step="0.01" placeholder="0"><div class="hint" id="adjHint"></div></div>
  <div><label>Item cost çarpanı</label><input autocomplete="off" id="mult" type="number" step="0.01" value="1.15"><div class="hint">Otomatik çarpılır (ürün × çarpan)</div></div>
  <div><label>Shipping cost ($)</label><input autocomplete="off" id="shipCost" type="number" step="0.01" value="0.60"></div>
 </div>
@@ -255,6 +263,7 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
  <div class="add">
   <input autocomplete="off" id="pname" data-skip="1" type="text" placeholder="Ürün adı" maxlength="80">
   <button id="add">Listeye ekle</button>
+  <input autocomplete="off" id="plink" data-skip="1" type="text" inputmode="url" placeholder="Tedarikçi linki (opsiyonel)" maxlength="500" style="flex:1 1 100%;order:3">
  </div>
 </div>
 </div>
@@ -282,7 +291,8 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
 <h2>Gelir</h2>
 <div class="ch-top"><div class="ch-total" id="chTotal">$0.00</div></div>
 <div class="ch-wrap" id="chWrap"><svg id="chSvg" role="img" aria-label="Gelir grafiği"></svg><div class="tip" id="chTip" hidden></div></div>
-<div class="seg" id="chSeg"><button data-m="week" class="on">Haftalık</button><button data-m="month">Aylık</button><button data-m="year">Yıllık</button></div>
+<div class="seg" id="chSeg"><button data-m="week" class="on">7 gün</button><button data-m="month">30 gün</button><button data-m="d90">90 gün</button><button data-m="year">Yıllık</button><button data-m="custom">Özel</button></div>
+<div class="dr" id="chRange" hidden><input type="date" id="cFrom" data-skip="1" aria-label="Başlangıç"><input type="date" id="cTo" data-skip="1" aria-label="Bitiş"></div>
 <div class="legend"><span><i class="k"></i><span id="lgCur"></span></span></div>
 <details class="tb"><summary>Tablo olarak göster</summary><div id="chTable"></div></details>
 </div>
@@ -295,10 +305,12 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
  <div class="stat"><div class="hint">Net kâr</div><b id="stProf">$0.00</b></div>
  <div class="stat"><div class="hint">Bekleyen ürün</div><b id="stPend">0</b></div>
 </div>
+<input autocomplete="off" id="q" class="sq" data-skip="1" type="text" enterkeyhint="search" placeholder="Ürün ara…">
 <div class="tools">
  <select autocomplete="off" id="lf" data-skip="1"><option value="all">Tümü</option><option value="listed">Listede</option><option value="sold">Satıldı</option></select>
  <select autocomplete="off" id="ls" data-skip="1"><option value="new">En yeni</option><option value="profit">En çok kâr</option></select>
  <button class="ghost" id="csv" style="width:auto;padding:9px 14px;font-size:13px">Excel</button>
+ <button class="ghost" id="shBtn" type="button" hidden style="width:auto;padding:9px 14px;font-size:13px">Sheets ↗</button>
 </div>
 <div id="list"></div>
 </div>
@@ -381,7 +393,7 @@ $("ap").addEventListener("click",function(){if(suggested!==null){$("sold").value
 
 /* ---- Ürün listesi ---- */
 var KEY="ebayList",items=[],pendingDel=null;
-var cloud={add:function(){},sale:function(){},rm:function(){},del:function(){},tax:function(){}};
+var cloud={upd:function(){},add:function(){},sale:function(){},rm:function(){},del:function(){},tax:function(){}};
 try{items=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){items=[]}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(items))}catch(e){}}
 function fields(){return [].slice.call(document.querySelectorAll("input:not([data-skip]),select:not([data-skip])")).filter(function(e){return e.id})}
@@ -405,6 +417,7 @@ items.forEach(function(i){
  if(!i.sales)i.sales=i.status==="sold"?[{n:i.qty||1,price:i.soldPrice,act:i.act,rev:i.rev,at:i.soldAt}]:[];
  i.sales.forEach(function(x){if(!x.sid)x.sid=nid()});
 });
+function normLink(v){v=String(v||"").trim();if(!v)return "";if(!/^https?:\/\//i.test(v))v="https://"+v;return v}
 function lastAt(i){return Math.max.apply(null,i.sales.map(function(x){return x.at}))}
 function nowLocal(){var d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,16)}
 function renderList(){
@@ -414,16 +427,19 @@ function renderList(){
  $("stSold").textContent=qty;$("stRev").textContent=m(rev);
  $("stProf").textContent=m(pr);$("stProf").className=cls(pr);
  $("stPend").textContent=pend.length;
- var f=$("lf").value,v=items.filter(function(i){return f==="all"||(f==="sold")===(su(i)>0)});
+ var f=$("lf").value,qv=($("q").value||"").trim().toLocaleLowerCase("tr"),v=items.filter(function(i){return (f==="all"||(f==="sold")===(su(i)>0))&&(!qv||String(i.name).toLocaleLowerCase("tr").indexOf(qv)>-1)});
  if($("ls").value==="profit")v=v.slice().sort(function(a,b){return (su(b)?sPro(b):b.est)-(su(a)?sPro(a):a.est)});
- if(!v.length){$("list").innerHTML='<div class="empty">'+(items.length?"Bu filtrede ürün yok.":"Henüz ürün yok. Hesapla, ürün adını yaz ve “Listeye ekle”ye bas.")+'</div>';return}
+ if(!v.length){$("list").innerHTML='<div class="empty">'+(items.length?(qv?"“"+esc($("q").value.trim())+"” ile eşleşen ürün yok.":"Bu filtrede ürün yok."):"Henüz ürün yok. Hesapla, ürün adını yaz ve “Listeye ekle”ye bas.")+'</div>';return}
  $("list").innerHTML=v.map(function(i){
   var k=su(i),isS=k>0;
-  var h='<div class="it"><div class="it-h"><b>'+esc(i.name)+'</b><span class="chip'+(isS?" s":"")+'">'+(isS?k+" adet satıldı":"Listede")+'</span></div><div class="it-n">';
+  var h='<div class="it"><div class="it-h"><b>'+esc(i.name)+'</b><span class="rt"><span class="chip'+(isS?" s":"")+'">'+(isS?k+" adet satıldı":"Listede")+'</span>'+(isS?'<button class="plus" title="Bir satış daha ekle" aria-label="Bir satış daha ekle" data-act="sell" data-id="'+i.id+'">+</button>':'')+'</span></div><div class="it-n">';
+  var sn=i.snap||{},ic=(parseFloat(sn.raw)||0)*(parseFloat(sn.mult)||1);
+  if(ic>0)h+='<span>Maliyet <b>'+m(ic)+'</b></span>';
+  if(i.link&&/^https?:\/\//i.test(i.link))h+='<span><a href="'+esc(i.link)+'" target="_blank" rel="noopener noreferrer">Tedarikçi ↗</a></span>';
   h+='<span>Liste fiyatı <b>'+m(i.listed)+'</b></span>';
   if(isS){h+='<span>Gelir <b>'+m(sRev(i))+'</b></span><span>Net kâr <b class="'+cls(sPro(i))+'">'+m(sPro(i))+'</b></span><span>Son satış '+dt(lastAt(i))+'</span>'}
   else h+='<span>'+dt(i.added)+'</span>';
-  h+='</div><div class="it-a"><button data-act="sell" data-id="'+i.id+'">Satış ekle</button><button class="ghost" data-act="dopen" data-id="'+i.id+'">Eski tarihli satış</button>';
+  h+='</div><div class="it-a">'+(isS?'':'<button data-act="sell" data-id="'+i.id+'">Satış ekle</button>')+'<button class="ghost" data-act="dopen" data-id="'+i.id+'">Eski tarihli satış</button><button class="ghost" data-act="link" data-id="'+i.id+'">'+(i.link?"Linki düzenle":"Link ekle")+'</button>';
   if(isS)h+='<button class="ghost" data-act="undo" data-id="'+i.id+'">Son satışı geri al</button>';
   if(pendingDel===i.id)h+='<span class="x2"><button class="danger" data-act="delok" data-id="'+i.id+'">Evet, sil</button><button class="ghost" data-act="delno" data-id="'+i.id+'">Vazgeç</button></span>';
   else h+='<button class="x" data-act="del" data-id="'+i.id+'">Sil</button>';
@@ -437,11 +453,12 @@ $("add").addEventListener("click",function(){
  var snap={};fields().forEach(function(e){snap[e.id]=e.value});
  var s=n("sold");
  if(s<=0){var b0=$("add");b0.textContent="Önce satış fiyatı gir";setTimeout(function(){b0.textContent="Listeye ekle"},1600);return}
- items.unshift({id:nid(),name:$("pname").value.trim()||"İsimsiz ürün",added:Date.now(),snap:snap,listed:s,est:prof(s),sales:[]});
- cloud.add(items[0]);save();$("pname").value="";renderList();
+ items.unshift({id:nid(),name:$("pname").value.trim()||"İsimsiz ürün",link:normLink($("plink").value),added:Date.now(),snap:snap,listed:s,est:prof(s),sales:[]});
+ cloud.add(items[0]);save();$("pname").value="";$("plink").value="";renderList();
  var b=$("add");b.textContent="Eklendi ✓";setTimeout(function(){b.textContent="Listeye ekle"},1200);
 });
 $("pname").addEventListener("keydown",function(e){if(e.key==="Enter")$("add").click()});
+$("plink").addEventListener("keydown",function(e){if(e.key==="Enter")$("add").click()});
 $("list").addEventListener("click",function(e){
  var b=e.target.closest("button[data-act]");if(!b)return;
  var id=+b.dataset.id,it=items.filter(function(i){return i.id===id})[0];if(!it)return;
@@ -451,7 +468,8 @@ $("list").addEventListener("click",function(e){
  else if(b.dataset.act==="sell"){
   var r=evalSnap(it.snap,it.listed);
   var s1={sid:nid(),n:1,price:it.listed,act:r.profit,rev:r.revenue,at:Date.now()};it.sales.push(s1);cloud.sale(it,s1);
- }else if(b.dataset.act==="dopen"){openDate=id;renderList();return}
+ }else if(b.dataset.act==="link"){var nl=prompt("Tedarikçi linki (boş bırakırsan silinir):",it.link||"");if(nl===null)return;it.link=normLink(nl);cloud.upd(it)}
+ else if(b.dataset.act==="dopen"){openDate=id;renderList();return}
  else if(b.dataset.act==="dno"){openDate=null;renderList();return}
  else if(b.dataset.act==="dok"){
   var at=new Date($("sd"+id).value).getTime();
@@ -462,7 +480,7 @@ $("list").addEventListener("click",function(e){
  else if(b.dataset.act==="undo"){var pp=it.sales.pop();if(pp)cloud.rm(it,pp)}
  save();renderList();
 });
-$("lf").addEventListener("change",renderList);$("ls").addEventListener("change",renderList);
+$("q").addEventListener("input",renderList);$("lf").addEventListener("change",renderList);$("ls").addEventListener("change",renderList);
 /* ---- Excel (.xlsx) dışa aktarma ---- */
 function crc32(u8){var t=crc32.t;if(!t){t=crc32.t=[];for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}}var x=0xFFFFFFFF;for(var i=0;i<u8.length;i++)x=t[(x^u8[i])&255]^(x>>>8);return (x^0xFFFFFFFF)>>>0}
 function zipStore(files){
@@ -525,13 +543,23 @@ $("csv").addEventListener("click",function(){
  function dl(){var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=nm;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1500)}
 });
 /* ---- Gelir grafiği ---- */
-var chartMode="week",MS={week:{len:7,m:0},month:{len:30,m:0},year:{len:12,m:1}},CS=null;
+var chartMode="week",MS={week:{len:7,m:0},month:{len:30,m:0},d90:{len:90,m:0},year:{len:12,m:1}},CS=null,CR={from:null,to:null};
+function dm(n){var d=new Date(n*864e5);return d.getUTCFullYear()*12+d.getUTCMonth()}
+function pday(v){var a=String(v||"").split("-");if(a.length!==3)return null;var t=Date.UTC(+a[0],+a[1]-1,+a[2]);return isNaN(t)?null:Math.round(t/864e5)}
+function rangeCfg(){
+ if(chartMode==="custom"&&CR.from!=null&&CR.to!=null){
+  var a=Math.min(CR.from,CR.to),b=Math.max(CR.from,CR.to),days=b-a+1;
+  if(days>120){var ma=dm(a);return {L:dm(b)-ma+1,m:1,base:ma}}
+  var L=Math.max(2,days);return {L:L,m:0,base:b-(L-1)};
+ }
+ var c=MS[chartMode]||MS.week;return {L:c.len,m:c.m,base:null};
+}
 function dnum(t){var d=new Date(t);return Math.round(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5)}
 function mnum(t){var d=new Date(t);return d.getFullYear()*12+d.getMonth()}
 function fDay(n,y){return new Date(n*864e5).toLocaleDateString("tr-TR",{day:"numeric",month:"short",year:y?"numeric":undefined,timeZone:"UTC"})}
 function fMon(n,y){return new Date(Date.UTC(Math.floor(n/12),((n%12)+12)%12,1)).toLocaleDateString("tr-TR",{month:"short",year:y?"numeric":undefined,timeZone:"UTC"})}
 function series(){
- var c=MS[chartMode],L=c.len,isM=!!c.m,now=Date.now(),base=(isM?mnum(now):dnum(now))-(L-1),cur=[],prev=[],curP=[],prevP=[],i;
+ var c=rangeCfg(),L=c.L,isM=!!c.m,now=Date.now(),base=c.base!==null?c.base:(isM?mnum(now):dnum(now))-(L-1),cur=[],prev=[],curP=[],prevP=[],i;
  for(i=0;i<L;i++){cur.push(0);prev.push(0);curP.push(0);prevP.push(0)}
  items.forEach(function(it){(it.sales||[]).forEach(function(x){
   var v=x.rev*x.n,k=(isM?mnum(x.at):dnum(x.at))-base;
@@ -595,8 +623,17 @@ $("chSvg").addEventListener("pointerleave",function(e){if(e.pointerType!=="touch
 document.addEventListener("pointerdown",function(e){if(!e.target.closest("#chWrap"))chHide()});
 $("chSeg").addEventListener("click",function(e){
  var b=e.target.closest("button[data-m]");if(!b)return;
- chartMode=b.dataset.m;[].forEach.call(this.children,function(c){c.classList.toggle("on",c===b)});drawChart();
+ chartMode=b.dataset.m;[].forEach.call(this.children,function(c){c.classList.toggle("on",c===b)});
+ $("chRange").hidden=chartMode!=="custom";
+ if(chartMode==="custom"){var td=nowLocal().slice(0,10);$("cFrom").max=$("cTo").max=td;if(!$("cTo").value){$("cTo").value=td;$("cFrom").value=new Date(Date.now()-29*864e5-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);CR.from=pday($("cFrom").value);CR.to=pday($("cTo").value)}}
+ drawChart();
 });
+function crUp(){CR.from=pday($("cFrom").value);CR.to=pday($("cTo").value);drawChart()}
+$("cFrom").addEventListener("change",crUp);$("cTo").addEventListener("change",crUp);
+var shL="";try{shL=localStorage.getItem("ebaySheetLink")||""}catch(e){}
+function shBtnUp(){$("shBtn").hidden=!/^https:\/\/docs\.google\.com\//.test(shL)}
+window.setSheetLink=function(u){if(u===shL)return;shL=u;try{localStorage.setItem("ebaySheetLink",u)}catch(e){}shBtnUp()};
+$("shBtn").addEventListener("click",function(){if(shL)window.open(shL,"_blank","noopener")});shBtnUp();
 var rz=0;window.addEventListener("resize",function(){cancelAnimationFrame(rz);rz=requestAnimationFrame(drawChart)});
 $("tamt").addEventListener("input",function(){var tv=this.value===""?"0":this.value;try{localStorage.setItem("ebayTax",tv)}catch(e){}cloud.tax(tv)});
 document.querySelectorAll("details[data-k]").forEach(function(d){
@@ -612,12 +649,12 @@ $("themeBtn").addEventListener("click",function(){
 });
 themeLabel();
 $("reset").addEventListener("click",function(){
- ["sold","shipC","raw","promo","char","tm","pname"].forEach(function(i){$(i).value=""});
+ ["sold","shipC","raw","promo","char","tm","pname","plink"].forEach(function(i){$(i).value=""});
  calc();
  if(!(window.matchMedia&&matchMedia("(pointer:coarse)").matches))$("sold").focus();
 });
 function resetEntry(){
- ["sold","shipC","promo","char","tm","pname"].forEach(function(i){$(i).value=""});
+ ["sold","shipC","raw","promo","char","tm","pname","plink"].forEach(function(i){$(i).value=""});
  var tx=null;try{tx=localStorage.getItem("ebayTax")}catch(e){}
  $("tamt").value=tx===null?"10":tx;
  calc();
@@ -662,7 +699,7 @@ function start(){
  },fail);
  unsubS=F.onSnapshot(F.doc(db,"users",uid,"meta","settings"),function(s){
   var el=document.getElementById("tamt");
-  if(s.exists()){var sd=s.data();if(sd.sheetUrl&&sd.sheetToken)sheetCfg(sd.sheetUrl,sd.sheetToken)}
+  if(s.exists()){var sd=s.data();if(sd.sheetUrl&&sd.sheetToken)sheetCfg(sd.sheetUrl,sd.sheetToken);if(sd.sheetLink)window.setSheetLink(sd.sheetLink)}
   if(s.exists()&&s.data().tax!==undefined){
    var v=String(s.data().tax);
    if(el.value!==v&&document.activeElement!==el){el.value=v;try{localStorage.setItem("ebayTax",v)}catch(e){}window.calc()}
@@ -694,13 +731,15 @@ function shFlush(){
 }
 function shSched(){if(!SH.url)return;clearTimeout(SH.timer);SH.timer=setTimeout(shSnap,2500)}
 function shSnap(){
- var it=window.items||[],sales=[],rows=[];
+ var it=window.items||[],sales=[],rows=[],rows2=[];
  it.forEach(function(i){
   (i.sales||[]).forEach(function(x){sales.push([window.xserial(x.at),i.name,x.n,x.price,x.rev*x.n,x.act*x.n])});
   rows.push([i.name,i.listed,window.su(i),window.sRev(i),window.sPro(i),window.xserial(i.added)]);
+  var sn=i.snap||{};
+  rows2.push([i.name,i.link||"",i.listed,(parseFloat(sn.raw)||0)*(parseFloat(sn.mult)||1),parseFloat(sn.shipCost)||0,i.est||0,window.su(i),window.sRev(i),window.sPro(i),window.xserial(i.added)]);
  });
  sales.sort(function(a,b){return b[0]-a[0]});
- shPost({type:"snapshot",sales:sales,items:rows});
+ shPost({type:"snapshot",sales:sales,items:rows,items2:rows2});
 }
 function sheetCfg(url,token){
  if(SH.url===url&&SH.token===token)return;
@@ -761,9 +800,11 @@ btn.addEventListener("click",function(){
   c.sale=function(i,x){if(!uid)return;F.updateDoc(ref(i),{sales:F.arrayUnion(clean(x))}).catch(function(e){if(e.code==="not-found")F.setDoc(ref(i),clean(i)).catch(fail);else fail(e)})};
   c.rm=function(i,x){if(!uid)return;F.updateDoc(ref(i),{sales:F.arrayRemove(clean(x))}).catch(fail)};
   c.del=function(i){if(!uid)return;F.deleteDoc(ref(i)).catch(fail)};
+  c.upd=function(i){if(!uid)return;F.setDoc(ref(i),{link:i.link||""},{merge:true}).catch(fail)};
   c.tax=function(v){if(!uid)return;F.setDoc(F.doc(db,"users",uid,"meta","settings"),{tax:v},{merge:true}).catch(fail)};
-  var o0={add:c.add,sale:c.sale,rm:c.rm,del:c.del};
-  c.add=function(i){o0.add(i);shLog("Ürün eklendi",i.name,"Liste fiyatı $"+Number(i.listed).toFixed(2))};
+  var o0={add:c.add,sale:c.sale,rm:c.rm,del:c.del,upd:c.upd};
+  c.add=function(i){o0.add(i);shLog("Ürün eklendi",i.name,"Liste fiyatı $"+Number(i.listed).toFixed(2)+(i.link?" · Tedarikçi: "+i.link:""))};
+  c.upd=function(i){o0.upd(i);shLog("Ürün güncellendi",i.name,"Tedarikçi: "+(i.link||"–"))};
   c.sale=function(i,x){o0.sale(i,x);shLog("Satış eklendi",i.name,x.n+" adet · $"+Number(x.price).toFixed(2)+" · kâr $"+(x.act*x.n).toFixed(2)+" · satış zamanı "+window.dts(x.at))};
   c.rm=function(i,x){o0.rm(i,x);shLog("Satış silindi",i.name,x.n+" adet · $"+Number(x.price).toFixed(2)+" · satış zamanı "+window.dts(x.at))};
   c.del=function(i){o0.del(i);shLog("Ürün silindi",i.name,"Satış sayısı: "+(i.sales||[]).length)};
