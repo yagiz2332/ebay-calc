@@ -79,6 +79,11 @@ input:focus,select:focus{outline:none;border-color:var(--tx);background:var(--ca
 .r:last-child{border:0;padding-bottom:0}
 .r:first-child{padding-top:0}
 .tg{align-items:end}
+.bigrow{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 16px}
+.tl{font-size:20px;font-weight:600;color:var(--mu);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ch-col{display:flex;flex-direction:column}
+.tlx{font-size:12px;color:var(--mu);opacity:.6;margin-top:3px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ch-col .ch-prof{line-height:1.2}
 .gm{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd);font-size:13px;color:var(--mu)}
 .gm b{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
 .gm .gd{font-size:12.5px}
@@ -171,6 +176,14 @@ button.ghost{background:var(--field);color:var(--tx)}
 .lx:hover{color:var(--bad);opacity:1}
 .head{display:flex;align-items:center;justify-content:space-between;gap:10px 14px;flex-wrap:wrap;margin:6px 4px 20px}
 .head h1{margin:0}
+.fxi{width:auto;min-height:0;padding:4px 10px;background:none;color:var(--mu);font-size:11.5px;font-weight:500;letter-spacing:.01em;opacity:.75;border-radius:999px;display:inline-flex;align-items:center;gap:7px;margin-left:auto;margin-right:4px;font-variant-numeric:tabular-nums}
+.fxi:hover{opacity:1;background:var(--field)}
+.fxi i{width:6px;height:6px;border-radius:50%;background:var(--mu);display:inline-block}
+.fxi i.ok{background:var(--ok);box-shadow:0 0 8px color-mix(in srgb,var(--ok) 60%,transparent)}
+.fxi i.old{background:#e8963a}
+.fxi.ld i{animation:fxp 1s ease-in-out infinite}
+@keyframes fxp{50%{opacity:.25}}
+@media (max-width:999px){.fxi{order:3;flex-basis:100%;justify-content:flex-start;margin:0;padding-left:0}}
 .sync{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--mu)}
 .sync button{width:auto;min-height:0;padding:7px 14px;font-size:12.5px;border-radius:999px}
 @media (min-width:1000px){.head{margin:0 4px 24px}}
@@ -218,7 +231,7 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
 <div class="lock" id="lock"><h1>eBay <span>Fee Calculator</span> <em>by DEDE</em></h1><p id="lkT">Yükleniyor…</p><button id="lkB" hidden></button><button id="lkB2" class="ghost" hidden></button></div>
 <script>setTimeout(function(){var t=document.getElementById("lkT");if(document.body.classList.contains("locked")&&t&&t.textContent==="Yükleniyor…"){try{if(localStorage.getItem("ebayUnlocked")==="1"){document.body.classList.remove("locked");return}}catch(e){}t.textContent="Bağlanılamadı. İnternetini kontrol edip yeniden dene.";var b=document.getElementById("lkB");b.hidden=false;b.textContent="Yeniden dene";b.onclick=function(){location.reload()}}},12000)</script>
 <div class="w">
-<div class="head"><h1>eBay <span>Fee Calculator</span> <em>by DEDE</em></h1><div class="sync"><span id="syncMsg"></span><button id="themeBtn" class="ghost" type="button" title="Koyu / açık tema">☾ Koyu</button><button id="syncBtn" class="ghost">Giriş yap</button></div></div>
+<div class="head"><h1>eBay <span>Fee Calculator</span> <em>by DEDE</em></h1><button type="button" class="fxi" id="fxInfo" title="Kuru şimdi yenile"></button><div class="sync"><span id="syncMsg"></span><button id="themeBtn" class="ghost" type="button" title="Koyu / açık tema">☾ Koyu</button><button id="syncBtn" class="ghost">Giriş yap</button></div></div>
 
 <div class="cols">
 <div class="col-a">
@@ -283,7 +296,7 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
 <div class="col-b">
 <div style="order:1" class="card res">
 <div class="top">
- <div class="main"><div class="hint">Net profit</div><div class="big" id="profit">–</div></div>
+ <div class="main"><div class="hint">Net profit</div><div class="bigrow"><div class="big" id="profit">–</div><div class="tl" id="profitTl"></div></div></div>
  <div class="sub">
   <div><div class="hint">Margin</div><div class="sm" id="margin">–</div></div>
   <div><div class="hint">ROI</div><div class="sm" id="roi">–</div><div class="note">Ürün + kargo maliyetine göre kâr oranı</div></div>
@@ -305,7 +318,7 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
 
 <div style="order:7" class="card">
 <h2>Analiz</h2>
-<div class="ch-top"><div class="ch-total" id="chTotal">$0.00</div><div class="ch-prof" id="chProf"></div><div class="hint" id="chSub"></div></div>
+<div class="ch-top"><div class="ch-col"><div class="ch-total" id="chTotal">$0.00</div><div class="tlx" id="chTotalTl"></div></div><div class="ch-col"><div class="ch-prof" id="chProf"></div><div class="tlx" id="chProfTl"></div></div><div class="hint" id="chSub"></div></div>
 <div class="ch-wrap" id="chWrap"><svg id="chSvg" role="img" aria-label="Analiz grafiği"></svg><div class="tip" id="chTip" hidden></div></div>
 <div class="seg" id="chSeg"><button data-m="week" class="on">7 gün</button><button data-m="month">30 gün</button><button data-m="d90">90 gün</button><button data-m="year">Yıllık</button><button data-m="custom">Özel</button></div>
 <div class="dr" id="chRange" hidden><input type="date" id="cFrom" data-skip="1" aria-label="Başlangıç"><input type="date" id="cTo" data-skip="1" aria-label="Bitiş"></div>
@@ -317,8 +330,8 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
 <h2>Ürün listem</h2>
 <div class="stats">
  <div class="stat"><div class="hint">Satılan</div><b id="stSold">0</b></div>
- <div class="stat"><div class="hint">Gelir</div><b id="stRev">$0.00</b></div>
- <div class="stat"><div class="hint">Net kâr</div><b id="stProf">$0.00</b></div>
+ <div class="stat"><div class="hint">Gelir</div><b id="stRev">$0.00</b><div class="tlx" id="stRevTl"></div></div>
+ <div class="stat"><div class="hint">Net kâr</div><b id="stProf">$0.00</b><div class="tlx" id="stProfTl"></div></div>
  <div class="stat"><div class="hint">Bekleyen ürün</div><b id="stPend">0</b></div>
 </div>
 <input autocomplete="off" id="q" class="sq" data-skip="1" type="text" enterkeyhint="search" placeholder="Ürün ara…">
@@ -337,6 +350,25 @@ var CATS=[["Everything else",13.6],["Books, movies & music",14.6],["Clothing & a
 var $=function(i){return document.getElementById(i)};
 var n=function(i){var v=parseFloat($(i).value);return isNaN(v)?0:v};
 var m=function(x){return (x<0?"-":"")+"$"+Math.abs(x).toFixed(2)};
+var FX={r:0,t:0};
+try{var fxs=JSON.parse(localStorage.getItem("ebayFx")||"null");if(fxs&&fxs.r>0){FX.r=fxs.r;FX.t=fxs.t}}catch(e){}
+function tl(x){if(!(FX.r>0))return "";var v=x*FX.r,a=Math.abs(v);return "≈ "+(v<0?"-":"")+"₺"+a.toLocaleString("tr-TR",{maximumFractionDigits:a<10?2:0})}
+function fxTip(){return FX.r>0?"1 USD = ₺"+FX.r.toFixed(2)+" · kur güncelleme: "+new Date(FX.t).toLocaleString("tr-TR"):""}
+function stTl(rev,pr){var a=$("stRevTl"),b=$("stProfTl");if(!a||!b)return;window.lastSt=[rev,pr];a.textContent=tl(rev);b.textContent=tl(pr);a.title=b.title=fxTip()}
+function fxInfoUp(ld){var e=$("fxInfo");if(!e)return;e.classList.toggle("ld",!!ld);
+ if(!(FX.r>0)){e.innerHTML='<i></i>'+(ld?"Kur alınıyor…":"Kur alınamadı");return}
+ var d=new Date(FX.t),fresh=Date.now()-FX.t<3*36e5,two=function(n){return (n<10?"0":"")+n};
+ e.innerHTML='<i class="'+(fresh?"ok":"old")+'"></i>1$ = ₺'+FX.r.toFixed(2)+' · '+two(d.getDate())+"."+two(d.getMonth()+1)+" "+two(d.getHours())+":"+two(d.getMinutes())}
+function fxApply(){fxInfoUp();if(typeof calc==="function")calc();if(typeof drawChart==="function")drawChart();if(window.lastSt)stTl(window.lastSt[0],window.lastSt[1])}
+function fxLoad(force){
+ if(!force&&FX.r>0&&Date.now()-FX.t<3*36e5)return;
+ fxInfoUp(true);
+ function ok(r){if(r>0){FX.r=r;FX.t=Date.now();try{localStorage.setItem("ebayFx",JSON.stringify(FX))}catch(e){}fxApply()}else fxInfoUp()}
+ fetch("https://open.er-api.com/v6/latest/USD",{cache:"no-store"}).then(function(x){return x.json()}).then(function(j){ok(j&&j.rates&&j.rates.TRY)}).catch(function(){
+  fetch("https://api.frankfurter.app/latest?from=USD&to=TRY",{cache:"no-store"}).then(function(x){return x.json()}).then(function(j){ok(j&&j.rates&&j.rates.TRY)}).catch(function(){fxInfoUp()})})
+}
+document.addEventListener("visibilitychange",function(){if(!document.hidden)fxLoad()});
+window.addEventListener("load",function(){var b=$("fxInfo");if(b)b.addEventListener("click",function(){fxLoad(true)});fxInfoUp()});
 CATS.forEach(function(c,i){
  var o=document.createElement("option");o.value=i;o.textContent=c[0];$("cat").appendChild(o);
  var d=document.createElement("div");d.innerHTML='<label>'+c[0]+' (%)</label><input autocomplete="off" type="number" step="0.1" id="cr'+i+'" value="'+c[1]+'">';$("catRates").appendChild(d);
@@ -410,6 +442,7 @@ function calc(){
   +'<div class="r tot2"><span>Satış fiyatı</span><b>'+m(revenue)+'</b></div>'
   +'<div class="r tot2"><span>Net kâr</span><b class="'+(profit<3?"neg":profit<=6?"pos":"mid")+'">'+m(profit)+'</b></div>';
  var p=$("profit");var tot=profit;if(revenue<=0){p.textContent="$0.00";p.className="big"}else{p.textContent=m(tot);p.className="big "+(tot<3?"neg":tot<=6?"pos":"mid")}
+ var ptl=$("profitTl");ptl.textContent=tl(revenue>0?tot:0);ptl.title=fxTip();
  $("margin").textContent=revenue>0?(profit/revenue*100).toFixed(1)+"%":"–";
  lastC={profit:profit,revenue:revenue};gmUp();
  $("roi").textContent=revenue>0&&(cost+sh)>0?(profit/(cost+sh)*100).toFixed(1)+"%":"–";
@@ -452,7 +485,7 @@ function renderList(){
  drawChart();
  var sold=items.filter(function(i){return su(i)>0}),pend=items.filter(function(i){return su(i)===0});
  var qty=sold.reduce(function(a,i){return a+su(i)},0),rev=sold.reduce(function(a,i){return a+sRev(i)},0),pr=sold.reduce(function(a,i){return a+sPro(i)},0);
- $("stSold").textContent=qty;$("stRev").textContent=m(rev);
+ $("stSold").textContent=qty;$("stRev").textContent=m(rev);stTl(rev,pr);
  $("stProf").textContent=m(pr);$("stProf").className=cls(pr);
  $("stPend").textContent=pend.length;
  var f=$("lf").value,qv=($("q").value||"").trim().toLocaleLowerCase("tr"),v=items.filter(function(i){return (f==="all"||(f==="sold")===(su(i)>0))&&(!qv||String(i.name).toLocaleLowerCase("tr").indexOf(qv)>-1)});
@@ -630,8 +663,8 @@ function drawChart(){
  $("chTip").hidden=true;
  var wrap=$("chWrap"),W=wrap.clientWidth||320,H=W<500?Math.round(W*.72):Math.max(250,Math.min(330,Math.round(W*.42))),sm=W<500,pl=sm?34:40,pr=sm?28:36,pt=10,pb=26;
  var d=series(),L=d.L,sum=function(a){return a.reduce(function(x,y){return x+y},0)},tot=sum(d.cur);
- $("chTotal").textContent=m(tot);
- var tp=sum(d.curP);$("chProf").innerHTML="Kâr <b class=\""+cls(tp)+"\">"+m(tp)+"</b>";
+ $("chTotal").textContent=m(tot);$("chTotalTl").textContent=tl(tot);$("chTotalTl").title=fxTip();
+ var tp=sum(d.curP);$("chProf").innerHTML="Kâr <b class=\""+cls(tp)+"\">"+m(tp)+"</b>";$("chProfTl").textContent=tl(tp);$("chProfTl").title=fxTip();
  var top=niceMax(Math.max.apply(null,d.cur)*1.05);
  var x=function(i){return pl+i*(W-pl-pr)/(L-1)},y=function(v){return pt+(1-v/top)*(H-pt-pb)},y0=y(0);
  var cp=d.cur.map(function(v,i){return [x(i),y(v)]});
@@ -718,7 +751,7 @@ function resetEntry(){
 }
 if("serviceWorker" in navigator&&/^https?:$/.test(location.protocol)&&location.hostname!=="localhost"||("serviceWorker" in navigator&&location.hostname==="localhost"&&location.search.indexOf("sw")>-1)){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
 window.addEventListener("pageshow",function(e){if(e.persisted)resetEntry()});
-resetEntry();renderList();
+resetEntry();renderList();fxLoad();
 </script>
 <script type="module">
 (function(){
