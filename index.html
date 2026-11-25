@@ -82,6 +82,7 @@ input:focus,select:focus{outline:none;border-color:var(--tx);background:var(--ca
 .bigrow{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 16px}
 .tl{font-size:20px;font-weight:600;color:var(--mu);font-variant-numeric:tabular-nums;white-space:nowrap}
 .ch-col{display:flex;flex-direction:column}
+.tlz{font-size:11.5px;color:var(--mu);opacity:.6;font-weight:400;margin-left:2px;white-space:nowrap}
 .tlx{font-size:12px;color:var(--mu);opacity:.6;margin-top:3px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .ch-col .ch-prof{line-height:1.2}
 .gm{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd);font-size:13px;color:var(--mu)}
@@ -354,12 +355,13 @@ var FX={r:0,t:0};
 try{var fxs=JSON.parse(localStorage.getItem("ebayFx")||"null");if(fxs&&fxs.r>0){FX.r=fxs.r;FX.t=fxs.t}}catch(e){}
 function tl(x){if(!(FX.r>0))return "";var v=x*FX.r,a=Math.abs(v);return "≈ "+(v<0?"-":"")+"₺"+a.toLocaleString("tr-TR",{maximumFractionDigits:a<10?2:0})}
 function fxTip(){return FX.r>0?"1 USD = ₺"+FX.r.toFixed(2)+" · kur güncelleme: "+new Date(FX.t).toLocaleString("tr-TR"):""}
+function tx(x){var t=tl(x);return t?' <small class="tlz">'+t+"</small>":""}
 function stTl(rev,pr){var a=$("stRevTl"),b=$("stProfTl");if(!a||!b)return;window.lastSt=[rev,pr];a.textContent=tl(rev);b.textContent=tl(pr);a.title=b.title=fxTip()}
 function fxInfoUp(ld){var e=$("fxInfo");if(!e)return;e.classList.toggle("ld",!!ld);
  if(!(FX.r>0)){e.innerHTML='<i></i>'+(ld?"Kur alınıyor…":"Kur alınamadı");return}
  var d=new Date(FX.t),fresh=Date.now()-FX.t<3*36e5,two=function(n){return (n<10?"0":"")+n};
  e.innerHTML='<i class="'+(fresh?"ok":"old")+'"></i>1$ = ₺'+FX.r.toFixed(2)+' · '+two(d.getDate())+"."+two(d.getMonth()+1)+" "+two(d.getHours())+":"+two(d.getMinutes())}
-function fxApply(){fxInfoUp();if(typeof calc==="function")calc();if(typeof drawChart==="function")drawChart();if(window.lastSt)stTl(window.lastSt[0],window.lastSt[1])}
+function fxApply(){fxInfoUp();if(typeof calc==="function")calc();if(typeof renderList==="function")renderList()}
 function fxLoad(force){
  if(!force&&FX.r>0&&Date.now()-FX.t<3*36e5)return;
  fxInfoUp(true);
@@ -495,11 +497,11 @@ function renderList(){
   var k=su(i),isS=k>0;
   var h='<div class="it"><div class="it-h"><b>'+esc(i.name)+'</b><span class="rt"><span class="chip'+(isS?" s":"")+'">'+(isS?k+" adet satıldı":"Listede")+'</span>'+(isS?'<button class="plus" title="Bir satış daha ekle" aria-label="Bir satış daha ekle" data-act="sell" data-id="'+i.id+'">+</button>':'')+'</span></div><div class="it-n">';
   var sn=i.snap||{},ic=(parseFloat(sn.raw)||0)*(parseFloat(sn.mult)||1);
-  if(ic>0)h+='<span>Maliyet <b>'+m(ic)+'</b></span>';
+  if(ic>0)h+='<span>Maliyet <b>'+m(ic)+'</b>'+tx(ic)+'</span>';
   if(i.link&&/^https?:\/\//i.test(i.link))h+='<span><a href="'+esc(i.link)+'" target="_blank" rel="noopener noreferrer">Tedarikçi ↗</a></span>';
   var ue=(typeof i.est==='number')?i.est:evalSnap(i.snap||{},i.listed).profit;
-  h+='<span>Liste fiyatı <b>'+m(i.listed)+'</b></span><span>Kâr (adet başı) <b class="'+cls(ue)+'">'+m(ue)+'</b></span>';
-  if(isS){h+='<span>Gelir <b>'+m(sRev(i))+'</b></span><span>Net kâr <b class="'+cls(sPro(i))+'">'+m(sPro(i))+'</b></span><span>Son satış '+dt(lastAt(i))+'</span>'}
+  h+='<span>Liste fiyatı <b>'+m(i.listed)+'</b>'+tx(i.listed)+'</span><span>Kâr (adet başı) <b class="'+cls(ue)+'">'+m(ue)+'</b>'+tx(ue)+'</span>';
+  if(isS){h+='<span>Gelir <b>'+m(sRev(i))+'</b>'+tx(sRev(i))+'</span><span>Net kâr <b class="'+cls(sPro(i))+'">'+m(sPro(i))+'</b>'+tx(sPro(i))+'</span><span>Son satış '+dt(lastAt(i))+'</span>'}
   else h+='<span>'+dt(i.added)+'</span>';
   h+='</div><div class="it-a">'+(isS?'':'<button data-act="sell" data-id="'+i.id+'">Satış ekle</button>')+'<button class="ghost" data-act="dopen" data-id="'+i.id+'">Eski tarihli satış</button><button class="ghost" data-act="link" data-id="'+i.id+'">'+(i.link?"Linki düzenle":"Link ekle")+'</button><button class="ghost" data-act="price" data-id="'+i.id+'">Fiyatı düzenle</button>';
   if(isS)h+='<button class="ghost" data-act="undo" data-id="'+i.id+'">Son satışı geri al</button>';
