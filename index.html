@@ -85,6 +85,11 @@ input:focus,select:focus{outline:none;border-color:var(--tx);background:var(--ca
 .tlz{font-size:11.5px;color:var(--mu);opacity:.6;font-weight:400;margin-left:2px;white-space:nowrap}
 .tlx{font-size:12px;color:var(--mu);opacity:.6;margin-top:3px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .ch-col .ch-prof{line-height:1.2}
+.pickrow{margin-bottom:14px}
+.editbar{display:flex;flex-wrap:wrap;gap:8px 12px;justify-content:space-between;align-items:center;margin-bottom:14px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--s1) 14%,transparent);font-size:13px}
+.editbar[hidden]{display:none}
+.editbar .eb{display:flex;gap:8px}
+.editbar button{width:auto;padding:7px 14px;font-size:13px;min-height:0}
 .gm{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--bd);font-size:13px;color:var(--mu)}
 .gm b{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
 .gm .gd{font-size:12.5px}
@@ -238,11 +243,14 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
 <div class="col-a">
 <div style="order:2" class="card">
 <div class="chd"><h2>Ürün</h2><button id="reset" class="ghost" type="button">Sıfırla</button></div>
+<div class="pickrow"><select id="pickItem" data-skip="1" autocomplete="off" aria-label="Kayıtlı ürünlerimden seç"></select></div>
+<div class="editbar" id="editBar" hidden><span>Düzenleniyor: <b id="editName"></b></span><div class="eb"><button id="editSave" type="button">Kaydet</button><button id="editCancel" class="ghost" type="button">Vazgeç</button></div></div>
 <div class="g">
  <div><label>Sold price ($)</label><input autocomplete="off" id="sold" type="number" step="0.01" placeholder="0"></div>
  <div><label>Item cost – ürün fiyatı ($)</label><input autocomplete="off" id="raw" type="number" step="0.01" placeholder="0"><div class="hint" id="adjHint"></div></div>
  <div><label>Item cost çarpanı</label><input autocomplete="off" id="mult" type="number" step="0.01" value="1.15"><div class="hint">Otomatik çarpılır (ürün × çarpan)</div></div>
  <div><label>Shipping cost ($)</label><input autocomplete="off" id="shipCost" type="number" step="0.01" value="0.60"></div>
+ <div><label>Promoted ad rate (%)</label><input autocomplete="off" id="promo" type="number" step="0.1" placeholder="0"></div>
  <div><label>Hedef marj (%)</label><input autocomplete="off" id="tm" data-skip="1" type="number" step="0.1" placeholder="örn. 20"></div>
  <div><label>Satmam gereken fiyat</label><div class="spw"><div class="sp" id="sp">–</div><button id="ap" type="button">Uygula</button></div></div>
 </div>
@@ -258,7 +266,6 @@ body{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
  <div><label>Seller level</label><select autocomplete="off" id="level"><option value="top">Top Rated</option><option value="above" selected>Above Standard</option><option value="below">Below Standard</option></select></div>
  <div><label>Oversea sales?</label><select autocomplete="off" id="over"><option value="1" selected>Yes</option><option value="0">No</option></select></div>
  <div><label>Item category</label><select autocomplete="off" id="cat"></select></div>
- <div><label>Promoted ad rate (%)</label><input autocomplete="off" id="promo" type="number" step="0.1" placeholder="0"></div>
  <div><label>Donated to charity (%)</label><input autocomplete="off" id="char" type="number" step="0.1" placeholder="0"></div>
  <div><label>Shipping charged ($)</label><input autocomplete="off" id="shipC" type="number" step="0.01" placeholder="0"></div>
 </div>
@@ -485,6 +492,7 @@ function lastAt(i){return Math.max.apply(null,i.sales.map(function(x){return x.a
 function nowLocal(){var d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,16)}
 function renderList(){
  drawChart();
+ if(typeof pickFill==="function")pickFill();
  var sold=items.filter(function(i){return su(i)>0}),pend=items.filter(function(i){return su(i)===0});
  var qty=sold.reduce(function(a,i){return a+su(i)},0),rev=sold.reduce(function(a,i){return a+sRev(i)},0),pr=sold.reduce(function(a,i){return a+sPro(i)},0);
  $("stSold").textContent=qty;$("stRev").textContent=m(rev);stTl(rev,pr);
@@ -753,6 +761,40 @@ function resetEntry(){
 }
 if("serviceWorker" in navigator&&/^https?:$/.test(location.protocol)&&location.hostname!=="localhost"||("serviceWorker" in navigator&&location.hostname==="localhost"&&location.search.indexOf("sw")>-1)){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}
 window.addEventListener("pageshow",function(e){if(e.persisted)resetEntry()});
+/* ---- Kayıtlı ürünü hesaplayıcıya yükle / güncelle ---- */
+var EDF=["raw","mult","shipCost","promo","char","shipC","store","level","over","cat","tmode","tamt","tship"],editId=null,editBak=null;
+function pickFill(){
+ var pk=$("pickItem");if(!pk)return;
+ var ids=items.map(function(i){return i.id}).join(",")+"|"+items.map(function(i){return i.name}).join("");
+ if(pk.dataset.ids===ids)return;pk.dataset.ids=ids;
+ pk.innerHTML='<option value="">Kayıtlı ürünlerimden seç…</option>'+items.map(function(i){return '<option value="'+i.id+'">'+esc(String(i.name).slice(0,70))+'</option>'}).join("");
+ if(editId)pk.value=String(editId);
+}
+function editExit(){
+ if(editBak){Object.keys(editBak).forEach(function(k){$(k).value=editBak[k]})}
+ editBak=null;editId=null;$("editBar").hidden=true;$("pickItem").value="";["tm"].forEach(function(i){$(i).value=""});calc();
+}
+function editLoad(it){
+ if(!editBak){editBak={};["sold"].concat(EDF).forEach(function(k){editBak[k]=$(k).value})}
+ editId=it.id;var sn=it.snap||{};
+ $("sold").value=it.listed;
+ EDF.forEach(function(k){if(k in sn)$(k).value=sn[k]});
+ $("editName").textContent=it.name;$("editBar").hidden=false;calc();
+}
+$("pickItem").addEventListener("change",function(){
+ var id=+this.value;if(!id){if(editId)editExit();return}
+ var it=items.filter(function(i){return i.id===id})[0];if(it)editLoad(it);
+});
+$("editCancel").addEventListener("click",editExit);
+$("editSave").addEventListener("click",function(){
+ var it=items.filter(function(i){return i.id===editId})[0];if(!it)return;
+ var sp=n("sold");if(!(sp>0)){$("sold").focus();return}
+ var sn={};for(var k in (it.snap||{}))sn[k]=it.snap[k];
+ EDF.forEach(function(k){sn[k]=$(k).value});sn.sold=$("sold").value;
+ it.snap=sn;it.listed=sp;it.est=evalSnap(sn,sp).profit;
+ cloud.upd(it);save();var nm=it.name;editExit();renderList();
+ var b=$("editBar");
+});
 resetEntry();renderList();fxLoad();
 </script>
 <script type="module">
