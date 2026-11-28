@@ -122,7 +122,7 @@ button.ghost{background:var(--field);color:var(--tx)}
 .chip.s{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
 .it-n{display:flex;gap:6px 20px;flex-wrap:wrap;margin-top:6px;font-size:13px;color:var(--mu)}
 .it-n b{color:var(--tx);font-weight:600;font-variant-numeric:tabular-nums}
-.it-n b.pos{color:var(--ok)}.it-n b.neg{color:var(--bad)}
+.it-n b.pos{color:var(--ok)}.it-n b.neg{color:var(--bad)}.it-n b.mid{color:var(--s1)}
 .it-a{flex-wrap:wrap;display:flex;gap:8px;margin-top:10px;align-items:center}
 .it-a input.qn{width:72px}
 .it-a input{width:110px;padding:8px 10px;font-size:14px}
@@ -133,7 +133,7 @@ button.ghost{background:var(--field);color:var(--tx)}
 .log{margin-top:10px;padding:8px 12px;background:var(--field);border-radius:10px;font-size:12px;color:var(--mu);max-height:132px;overflow:auto}
 .log>div{display:flex;justify-content:space-between;gap:10px;padding:3px 0;flex-wrap:wrap}
 .log b{font-weight:600;font-variant-numeric:tabular-nums}
-.log b.pos{color:var(--ok)}.log b.neg{color:var(--bad)}
+.log b.pos{color:var(--ok)}.log b.neg{color:var(--bad)}.log b.mid{color:var(--s1)}
 .ch-top{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px}
 .ch-prof{font-size:18px;font-weight:600;color:var(--mu);font-variant-numeric:tabular-nums;white-space:nowrap}
 .ch-prof b{font-weight:700;margin-left:2px;text-shadow:0 0 16px color-mix(in srgb,currentColor 40%,transparent)}
@@ -483,6 +483,7 @@ function evalSnap(snap,sold){
 }
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function cls(x){return x>=0?"pos":"neg"}
+function pcol(x){return x===0?"":x<3?"neg":x<=6?"pos":"mid"}
 function dts(t){return new Date(t).toLocaleString("tr-TR")}
 function dt(t){return new Date(t).toLocaleDateString("tr-TR")}
 function su(i){return (i.sales||[]).reduce(function(a,s){return a+s.n},0)}
@@ -503,7 +504,7 @@ function renderList(){
  var sold=items.filter(function(i){return su(i)>0}),pend=items.filter(function(i){return su(i)===0});
  var qty=sold.reduce(function(a,i){return a+su(i)},0),rev=sold.reduce(function(a,i){return a+sRev(i)},0),pr=sold.reduce(function(a,i){return a+sPro(i)},0);
  $("stSold").textContent=qty;$("stRev").textContent=m(rev);stTl(rev,pr);
- $("stProf").textContent=m(pr);$("stProf").className=cls(pr);
+ $("stProf").textContent=m(pr);$("stProf").className=pcol(pr);
  $("stPend").textContent=pend.length;
  var f=$("lf").value,qv=($("q").value||"").trim().toLocaleLowerCase("tr"),v=items.filter(function(i){return (f==="all"||(f==="sold")===(su(i)>0))&&(!qv||String(i.name).toLocaleLowerCase("tr").indexOf(qv)>-1)});
  if($("ls").value==="profit")v=v.slice().sort(function(a,b){return (su(b)?sPro(b):b.est)-(su(a)?sPro(a):a.est)});
@@ -515,8 +516,8 @@ function renderList(){
   if(ic>0)h+='<span>Maliyet <b>'+m(ic)+'</b>'+tx(ic)+'</span>';
   if(i.link&&/^https?:\/\//i.test(i.link))h+='<span><a href="'+esc(i.link)+'" target="_blank" rel="noopener noreferrer">Tedarikçi ↗</a></span>';
   var ue=(typeof i.est==='number')?i.est:evalSnap(i.snap||{},i.listed).profit;
-  h+='<span>Liste fiyatı <b>'+m(i.listed)+'</b>'+tx(i.listed)+'</span><span>Kâr (adet başı) <b class="'+cls(ue)+'">'+m(ue)+'</b>'+tx(ue)+'</span>';
-  if(isS){h+='<span>Gelir <b>'+m(sRev(i))+'</b>'+tx(sRev(i))+'</span><span>Net kâr <b class="'+cls(sPro(i))+'">'+m(sPro(i))+'</b>'+tx(sPro(i))+'</span><span>Son satış '+dt(lastAt(i))+'</span>'}
+  h+='<span>Liste fiyatı <b>'+m(i.listed)+'</b>'+tx(i.listed)+'</span><span>Kâr (adet başı) <b class="'+pcol(ue)+'">'+m(ue)+'</b>'+tx(ue)+'</span>';
+  if(isS){h+='<span>Gelir <b>'+m(sRev(i))+'</b>'+tx(sRev(i))+'</span><span>Net kâr <b class="'+pcol(sPro(i))+'">'+m(sPro(i))+'</b>'+tx(sPro(i))+'</span><span>Son satış '+dt(lastAt(i))+'</span>'}
   else h+='<span>'+dt(i.added)+'</span>';
   h+='</div><div class="it-a">'+(isS?'':'<button data-act="sell" data-id="'+i.id+'">Satış ekle</button>')+'<button class="ghost" data-act="dopen" data-id="'+i.id+'">Eski tarihli satış</button><button class="ghost" data-act="link" data-id="'+i.id+'">'+(i.link?"Linki düzenle":"Link ekle")+'</button><button class="ghost" data-act="price" data-id="'+i.id+'">Fiyatı düzenle</button>';
   if(isS)h+='<button class="ghost" data-act="undo" data-id="'+i.id+'">Son satışı geri al</button>';
@@ -527,7 +528,7 @@ function renderList(){
    h+='<div class="pe" data-id="'+i.id+'">'+pf("listed","Liste fiyatı ($)",i.listed)+pf("raw","Item cost ($)",sn2.raw||"")+pf("mult","Çarpan",sn2.mult||"1.15")+pf("shipCost","Shipping cost ($)",sn2.shipCost||"")+pf("promo","Promoted ad rate (%)",sn2.promo||"")+'<div class="pe-res"><div class="pe-k">Yeni net kâr</div><div class="pe-v" id="peV'+i.id+'"></div><div class="pe-s" id="peS'+i.id+'"></div><div class="pe-b"><button data-act="pok" data-id="'+i.id+'">Kaydet</button><button class="ghost" data-act="pno" data-id="'+i.id+'">İptal</button></div></div></div>'}
   if(editLink===i.id)h+='<div class="dr"><input type="text" inputmode="url" autocapitalize="off" spellcheck="false" autocomplete="off" data-skip="1" id="lk'+i.id+'" placeholder="Tedarikçi linki" maxlength="500" value="'+esc(i.link||"")+'"><button data-act="lkok" data-id="'+i.id+'">Kaydet</button><button class="ghost" data-act="lkno" data-id="'+i.id+'">İptal</button></div>';
   if(openDate===i.id)h+='<div class="dr"><input type="datetime-local" autocomplete="off" data-skip="1" id="sd'+i.id+'" max="'+nowLocal()+'" value="'+nowLocal()+'"><button data-act="dok" data-id="'+i.id+'">Ekle</button><button class="ghost" data-act="dno" data-id="'+i.id+'">İptal</button></div>';
-  if(isS){var ss=i.sales.slice().sort(function(a,b){return a.at-b.at}),tn=ss.length;h+='<div class="log">'+ss.map(function(x,j){return '<div><span>#'+(j+1)+' · '+dts(x.at)+'</span><span>'+x.n+' adet · '+m(x.price)+' · kâr <b class="'+cls(x.act*x.n)+'">'+m(x.act*x.n)+'</b> <button class="lx" title="Bu satışı sil" data-act="rm" data-id="'+i.id+'" data-sid="'+x.sid+'">✕</button></span></div>'}).reverse().join("")+'</div>'}
+  if(isS){var ss=i.sales.slice().sort(function(a,b){return a.at-b.at}),tn=ss.length;h+='<div class="log">'+ss.map(function(x,j){return '<div><span>#'+(j+1)+' · '+dts(x.at)+'</span><span>'+x.n+' adet · '+m(x.price)+' · kâr <b class="'+pcol(x.act*x.n)+'">'+m(x.act*x.n)+'</b> <button class="lx" title="Bu satışı sil" data-act="rm" data-id="'+i.id+'" data-sid="'+x.sid+'">✕</button></span></div>'}).reverse().join("")+'</div>'}
   return h+'</div>';
  }).join("");
 }
@@ -683,7 +684,7 @@ function drawChart(){
  var wrap=$("chWrap"),W=wrap.clientWidth||320,H=W<500?Math.round(W*.72):Math.max(250,Math.min(330,Math.round(W*.42))),sm=W<500,pl=sm?34:40,pr=sm?28:36,pt=10,pb=26;
  var d=series(),L=d.L,sum=function(a){return a.reduce(function(x,y){return x+y},0)},tot=sum(d.cur);
  $("chTotal").textContent=m(tot);$("chTotalTl").textContent=tl(tot);$("chTotalTl").title=fxTip();
- var tp=sum(d.curP);$("chProf").innerHTML="Kâr <b class=\""+cls(tp)+"\">"+m(tp)+"</b>";$("chProfTl").textContent=tl(tp);$("chProfTl").title=fxTip();
+ var tp=sum(d.curP);$("chProf").innerHTML="Kâr <b class=\""+pcol(tp)+"\">"+m(tp)+"</b>";$("chProfTl").textContent=tl(tp);$("chProfTl").title=fxTip();
  var top=niceMax(Math.max.apply(null,d.cur)*1.05);
  var x=function(i){return pl+i*(W-pl-pr)/(L-1)},y=function(v){return pt+(1-v/top)*(H-pt-pb)},y0=y(0);
  var cp=d.cur.map(function(v,i){return [x(i),y(v)]});
@@ -721,7 +722,7 @@ function chMove(e){
  D.setAttribute("cx",cx);D.setAttribute("cy",CS.y(CS.d.cur[i]));D.style.display="";
  var D2=$("chD2");D2.setAttribute("cx",cx);D2.setAttribute("cy",CS.y2(CS.d.lst[i]));D2.style.display="";
  var t=$("chTip");
- t.innerHTML='<div class="th">'+CS.d.lab(i,true)+'</div><div><i class="k"></i><b>'+m(CS.d.cur[i])+'</b> <span style="color:var(--mu)">· kâr</span> <b class="'+pc(CS.d.curP[i])+'">'+m(CS.d.curP[i])+'</b></div><div><i class="k p"></i><b>'+CS.d.lst[i]+'</b> <span style="color:var(--mu)">ürün listelendi</span></div><div><i class="k g"></i><b class="pos">'+CS.d.sold[i]+'</b> <span style="color:var(--mu)">ürün satıldı</span></div>';
+ t.innerHTML='<div class="th">'+CS.d.lab(i,true)+'</div><div><i class="k"></i><b>'+m(CS.d.cur[i])+'</b> <span style="color:var(--mu)">· kâr</span> <b class="'+pcol(CS.d.curP[i])+'">'+m(CS.d.curP[i])+'</b></div><div><i class="k p"></i><b>'+CS.d.lst[i]+'</b> <span style="color:var(--mu)">ürün listelendi</span></div><div><i class="k g"></i><b class="pos">'+CS.d.sold[i]+'</b> <span style="color:var(--mu)">ürün satıldı</span></div>';
  t.hidden=false;
  var tw=t.offsetWidth,left=cx/sx+14;if(left+tw>r.width)left=cx/sx-tw-14;t.style.left=Math.max(0,left)+"px";
 }
